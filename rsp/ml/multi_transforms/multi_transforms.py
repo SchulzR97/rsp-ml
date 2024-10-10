@@ -333,11 +333,10 @@ class Resize(MultiTransform):
 
         self.__toTensor__ = ToTensor()
         self.__toPILImage__ = ToPILImage()
+        self.__toCVImage__ = ToCVImage()
 
         self.target_size = target_size
         self.auto_crop = auto_crop
-
-        self.__toCVImage__ = ToCVImage()
 
     def __call__(self, inputs):
         self.__get_size__(inputs)
@@ -360,6 +359,8 @@ class Resize(MultiTransform):
                 new_w, new_h = self.target_size[1], self.target_size[0]
                 result = cv.resize(input, (new_w, new_h))
             results.append(result)
+
+        results = self.__toTensor__(results)
 
         if not is_tensor:
             results = self.__toPILImage__(results)
@@ -562,6 +563,7 @@ class BGR2GRAY(MultiTransform):
 
         self.__toTensor__ = ToTensor()
         self.__toCVImage__ = ToCVImage()
+        self.__toPILImage__ = ToPILImage()
 
     def __call__(self, inputs):
         self.__get_size__(inputs)
