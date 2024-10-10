@@ -533,6 +533,27 @@ class GaussianNoise(MultiTransform):
     def __reset__(self):
         self.__noise_level__ = self.min_noise_level + np.random.random() * (self.max_noise_level - self.min_noise_level)
 
+class Stack(MultiTransform):
+    def __init__(self):
+        super().__init__()
+
+        self.__toTensor__ = ToTensor()
+        self.__toPILImage__ = ToPILImage()
+
+    def __call__(self, inputs):
+        self.__get_size__(inputs)
+        self.__reset__()
+        is_tensor = isinstance(inputs[0], torch.Tensor)
+        if not is_tensor:
+            inputs = self.__toTensor__(inputs)
+
+        results = torch.stack(inputs)
+        
+        return results
+    
+    def __reset__(self):
+        pass
+
 if __name__ == '__main__':
     transforms = Compose([
         ToTensor(),
@@ -545,19 +566,21 @@ if __name__ == '__main__':
         Brightness(0.5, 1.5),
         GaussianNoise(0.0, 0.005),
         BGR2RGB(),
+        Stack(),
         ToCVImage(),
     ])
 
-    train_dir = f'/media/schulzr/ACA02F26A02EF70C/data/tuc-actionpredictiondataset/sequences/realsense/train'
+    #sequence_dir = f'/media/schulzr/ACA02F26A02EF70C/data/tuc-actionpredictiondataset/sequences/realsense/train'
+    sequence_dir = '/Users/schulzr/Library/CloudStorage/OneDrive-Persönlich/Datasets/tuc-actionpredictiondataset1/sequences/realsense/train'
 
     imgs = [
-        Image.open(f'{train_dir}/A000C000S000SEQ000/C000F00000_color.jpg'),
-        Image.open(f'{train_dir}/A000C000S000SEQ000/C000F00001_color.jpg'),
-        Image.open(f'{train_dir}/A000C000S000SEQ000/C000F00002_color.jpg'),
-        Image.open(f'{train_dir}/A000C000S000SEQ000/C000F00003_color.jpg'),
-        Image.open(f'{train_dir}/A000C000S000SEQ000/C000F00004_color.jpg'),
-        Image.open(f'{train_dir}/A000C000S000SEQ000/C000F00005_color.jpg'),
-        Image.open(f'{train_dir}/A000C000S000SEQ000/C000F00006_color.jpg'),
+        Image.open(f'{sequence_dir}/A000C000S000SEQ000/C000F00000_color.jpg'),
+        Image.open(f'{sequence_dir}/A000C000S000SEQ000/C000F00001_color.jpg'),
+        Image.open(f'{sequence_dir}/A000C000S000SEQ000/C000F00002_color.jpg'),
+        Image.open(f'{sequence_dir}/A000C000S000SEQ000/C000F00003_color.jpg'),
+        Image.open(f'{sequence_dir}/A000C000S000SEQ000/C000F00004_color.jpg'),
+        Image.open(f'{sequence_dir}/A000C000S000SEQ000/C000F00005_color.jpg'),
+        Image.open(f'{sequence_dir}/A000C000S000SEQ000/C000F00006_color.jpg'),
     ]
 
     for i in range(10):
