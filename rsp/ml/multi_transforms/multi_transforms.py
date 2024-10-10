@@ -368,15 +368,142 @@ class Resize(MultiTransform):
     def __reset__(self):
         pass
 
+class Brightness(MultiTransform):
+    def __init__(self, min_rel:float, max_rel:float):
+        super().__init__()
+
+        if min_rel < 0 or max_rel < 0 or min_rel > max_rel:
+            raise Exception(f'min_rel and max_rel expected to be greater or equal 0. min_rel expected to be less or equal max_rel')
+
+        self.__toTensor__ = ToTensor()
+        self.__toPILImage__ = ToPILImage()
+
+        self.min_rel = min_rel
+        self.max_rel = max_rel
+
+        self.__toCVImage__ = ToCVImage()
+
+    def __call__(self, inputs):
+        self.__get_size__(inputs)
+        self.__reset__()
+        is_tensor = isinstance(inputs[0], torch.Tensor)
+        if not is_tensor:
+            inputs = self.__toTensor__(inputs)
+
+        results = []
+        for input in self.__toCVImage__(inputs):
+            hsv = cv.cvtColor(input, cv.COLOR_BGR2HSV)
+            h, s, v = cv.split(hsv)
+
+            v *= self.rel
+            v[v > 1] = 1
+            v[v < 0] = 0
+            hsv = cv.merge((h, s, v))
+            result = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
+
+            results.append(result)
+
+        if not is_tensor:
+            results = self.__toPILImage__(results)
+        return results
+    
+    def __reset__(self):
+        self.rel = self.min_rel + np.random.random() * (self.max_rel - self.min_rel)
+
+class Satturation(MultiTransform):
+    def __init__(self, min_rel:float, max_rel:float):
+        super().__init__()
+
+        if min_rel < 0 or max_rel < 0 or min_rel > max_rel:
+            raise Exception(f'min_rel and max_rel expected to be greater or equal 0. min_rel expected to be less or equal max_rel')
+
+        self.__toTensor__ = ToTensor()
+        self.__toPILImage__ = ToPILImage()
+
+        self.min_rel = min_rel
+        self.max_rel = max_rel
+
+        self.__toCVImage__ = ToCVImage()
+
+    def __call__(self, inputs):
+        self.__get_size__(inputs)
+        self.__reset__()
+        is_tensor = isinstance(inputs[0], torch.Tensor)
+        if not is_tensor:
+            inputs = self.__toTensor__(inputs)
+
+        results = []
+        for input in self.__toCVImage__(inputs):
+            hsv = cv.cvtColor(input, cv.COLOR_BGR2HSV)
+            h, s, v = cv.split(hsv)
+
+            s *= self.rel
+            s[s > 1] = 1
+            s[s < 0] = 0
+            hsv = cv.merge((h, s, v))
+            result = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
+
+            results.append(result)
+
+        if not is_tensor:
+            results = self.__toPILImage__(results)
+        return results
+    
+    def __reset__(self):
+        self.rel = self.min_rel + np.random.random() * (self.max_rel - self.min_rel)
+
+class Color(MultiTransform):
+    def __init__(self, min_rel:float, max_rel:float):
+        super().__init__()
+
+        if min_rel < 0 or max_rel < 0 or min_rel > max_rel:
+            raise Exception(f'min_rel and max_rel expected to be greater or equal 0. min_rel expected to be less or equal max_rel')
+
+        self.__toTensor__ = ToTensor()
+        self.__toPILImage__ = ToPILImage()
+
+        self.min_rel = min_rel
+        self.max_rel = max_rel
+
+        self.__toCVImage__ = ToCVImage()
+
+    def __call__(self, inputs):
+        self.__get_size__(inputs)
+        self.__reset__()
+        is_tensor = isinstance(inputs[0], torch.Tensor)
+        if not is_tensor:
+            inputs = self.__toTensor__(inputs)
+
+        results = []
+        for input in self.__toCVImage__(inputs):
+            hsv = cv.cvtColor(input, cv.COLOR_BGR2HSV)
+            h, s, v = cv.split(hsv)
+
+            h *= self.rel
+            h[h > 360] = 360
+            h[h < 0] = 0
+            hsv = cv.merge((h, s, v))
+            result = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
+
+            results.append(result)
+
+        if not is_tensor:
+            results = self.__toPILImage__(results)
+        return results
+    
+    def __reset__(self):
+        self.rel = self.min_rel + np.random.random() * (self.max_rel - self.min_rel)
+
 if __name__ == '__main__':
     transforms = Compose([
         ToTensor(),
         #RandomCrop(max_scale=1.1),
         Normalize(0, 1),
-        Rotate(max_angle=5, auto_scale=True),
+        #Rotate(max_angle=5, auto_scale=True),
         #Resize((500, 500)),
-        RandomCrop(max_scale=1.05),
-        RGB2BGR(),
+        #RandomCrop(max_scale=1.05),
+        Color(0.5, 1.5),
+        BGR2RGB(),
         ToCVImage(),
     ])
 
