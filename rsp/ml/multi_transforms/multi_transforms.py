@@ -245,7 +245,7 @@ class ToCVImage(MultiTransform):
             inputs = self.__toTensor__(inputs)
         results = []
         for img in inputs:
-            result = img.permute(1, 2, 0).numpy()
+            result = np.asarray(img.permute(1, 2, 0), dtype = np.float32)
             results.append(result)
         return results
     
@@ -526,6 +526,8 @@ class GaussianNoise(MultiTransform):
 
             results.append(result)
 
+        results = self.__toTensor__(results)
+
         if not is_tensor:
             results = self.__toPILImage__(results)
         return results
@@ -554,6 +556,37 @@ class Stack(MultiTransform):
     def __reset__(self):
         pass
 
+class BGR2GRAY(MultiTransform):
+    def __init__(self):
+        super().__init__()
+
+        self.__toTensor__ = ToTensor()
+        self.__toCVImage__ = ToCVImage()
+
+    def __call__(self, inputs):
+        self.__get_size__(inputs)
+        self.__reset__()
+        is_tensor = isinstance(inputs[0], torch.Tensor)
+        if not is_tensor:
+            inputs = self.__toTensor__(inputs)
+
+        results = []
+        for input in self.__toCVImage__(inputs):
+            result = cv.cvtColor(input, cv.COLOR_BGR2GRAY)
+
+            results.append(result)
+        
+        results = self.__toTensor__(results)
+        
+        if not is_tensor:
+            results = self.__toPILImage__(results)
+        return results
+    
+    def __reset__(self):
+        pass
+
+
+
 if __name__ == '__main__':
     transforms = Compose([
         ToTensor(),
@@ -565,8 +598,9 @@ if __name__ == '__main__':
         #Color(0.5, 1.5),
         Brightness(0.5, 1.5),
         GaussianNoise(0.0, 0.005),
-        BGR2RGB(),
-        Stack(),
+        #BGR2RGB(),
+        #Stack(),
+        BGR2GRAY(),
         ToCVImage(),
     ])
 
