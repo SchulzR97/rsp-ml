@@ -391,8 +391,12 @@ class Brightness(MultiTransform):
         if not is_tensor:
             inputs = self.__toTensor__(inputs)
 
+        is_color_image = inputs[0].shape[0] == 3
+
         results = []
         for input in self.__toCVImage__(inputs):
+            if not is_color_image:
+                input = cv.cvtColor(input, cv.COLOR_GRAY2BGR)
             hsv = cv.cvtColor(input, cv.COLOR_BGR2HSV)
             h, s, v = cv.split(hsv)
 
@@ -401,6 +405,9 @@ class Brightness(MultiTransform):
             v[v < 0] = 0
             hsv = cv.merge((h, s, v))
             result = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
+
+            if not is_color_image:
+                result = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
 
             results.append(result)
         
@@ -435,8 +442,12 @@ class Satturation(MultiTransform):
         if not is_tensor:
             inputs = self.__toTensor__(inputs)
 
+        is_color_image = inputs[0].shape[0] == 3
+
         results = []
         for input in self.__toCVImage__(inputs):
+            if not is_color_image:
+                input = cv.cvtColor(input, cv.COLOR_GRAY2BGR)
             hsv = cv.cvtColor(input, cv.COLOR_BGR2HSV)
             h, s, v = cv.split(hsv)
 
@@ -445,6 +456,9 @@ class Satturation(MultiTransform):
             s[s < 0] = 0
             hsv = cv.merge((h, s, v))
             result = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
+
+            if not is_color_image:
+                result = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
 
             results.append(result)
 
@@ -479,8 +493,12 @@ class Color(MultiTransform):
         if not is_tensor:
             inputs = self.__toTensor__(inputs)
 
+        is_color_image = inputs[0].shape[0] == 3
+
         results = []
         for input in self.__toCVImage__(inputs):
+            if not is_color_image:
+                input = cv.cvtColor(input, cv.COLOR_GRAY2BGR)
             hsv = cv.cvtColor(input, cv.COLOR_BGR2HSV)
             h, s, v = cv.split(hsv)
 
@@ -489,6 +507,9 @@ class Color(MultiTransform):
             h[h < 0] = 0
             hsv = cv.merge((h, s, v))
             result = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
+
+            if not is_color_image:
+                result = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
 
             results.append(result)
         
@@ -662,12 +683,13 @@ if __name__ == '__main__':
         #Resize((500, 500)),
         #RandomCrop(max_scale=1.05),
         #Color(0.5, 1.5),
-        #Brightness(0.5, 1.5),
+        BGR2GRAY(),
+        Brightness(0.5, 1.5),
         #GaussianNoise(0.0, 0.005),
         #BGR2RGB(),
         #Stack(),
-        RandomHorizontalFlip(),
-        BGR2GRAY(),
+        #RandomHorizontalFlip(),
+        #BGR2GRAY(),
         ToCVImage(),
     ])
 
