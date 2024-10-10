@@ -494,6 +494,39 @@ class Color(MultiTransform):
     def __reset__(self):
         self.rel = self.min_rel + np.random.random() * (self.max_rel - self.min_rel)
 
+class GaussianNoise(MultiTransform):
+    def __init__(self, min_noise_level = 0., max_noise_level:float = 0.005):
+        super().__init__()
+
+        self.__toTensor__ = ToTensor()
+        self.__toPILImage__ = ToPILImage()
+
+        self.min_noise_level = min_noise_level
+        self.max_noise_level = max_noise_level
+
+        self.__toCVImage__ = ToCVImage()
+
+    def __call__(self, inputs):
+        self.__get_size__(inputs)
+        self.__reset__()
+        is_tensor = isinstance(inputs[0], torch.Tensor)
+        if not is_tensor:
+            inputs = self.__toTensor__(inputs)
+
+        results = []
+        for input in self.__toCVImage__(inputs):
+            noise = -self.__noise_level__ + 2 * np.random.random(input.shape) * self.__noise_level__
+            result = input + noise
+
+            results.append(result)
+
+        if not is_tensor:
+            results = self.__toPILImage__(results)
+        return results
+    
+    def __reset__(self):
+        self.__noise_level__ = self.min_noise_level + np.random.random() * (self.max_noise_level - self.min_noise_level)
+
 if __name__ == '__main__':
     transforms = Compose([
         ToTensor(),
@@ -502,7 +535,8 @@ if __name__ == '__main__':
         #Rotate(max_angle=5, auto_scale=True),
         #Resize((500, 500)),
         #RandomCrop(max_scale=1.05),
-        Color(0.5, 1.5),
+        #Color(0.5, 1.5),
+        GaussianNoise(0.0, 0.005),
         BGR2RGB(),
         ToCVImage(),
     ])
