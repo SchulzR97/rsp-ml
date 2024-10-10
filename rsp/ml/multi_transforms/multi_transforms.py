@@ -402,7 +402,9 @@ class Brightness(MultiTransform):
             result = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
 
             results.append(result)
-
+        
+        results = self.__toTensor__(results)
+        
         if not is_tensor:
             results = self.__toPILImage__(results)
         return results
@@ -445,6 +447,8 @@ class Satturation(MultiTransform):
 
             results.append(result)
 
+        results = self.__toTensor__(results)
+
         if not is_tensor:
             results = self.__toPILImage__(results)
         return results
@@ -486,6 +490,8 @@ class Color(MultiTransform):
             result = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
 
             results.append(result)
+        
+        results = self.__toTensor__(results)
 
         if not is_tensor:
             results = self.__toPILImage__(results)
@@ -536,19 +542,22 @@ if __name__ == '__main__':
         #Resize((500, 500)),
         #RandomCrop(max_scale=1.05),
         #Color(0.5, 1.5),
+        Brightness(0.5, 1.5),
         GaussianNoise(0.0, 0.005),
         BGR2RGB(),
         ToCVImage(),
     ])
 
+    train_dir = f'/media/schulzr/ACA02F26A02EF70C/data/tuc-actionpredictiondataset/sequences/realsense/train'
+
     imgs = [
-        Image.open('/Users/schulzr/Library/CloudStorage/OneDrive-Persönlich/Datasets/tuc-actionpredictiondataset1/sequences/realsense/train/A000C000S000SEQ000/C000F00000_color.jpg'),
-        Image.open('/Users/schulzr/Library/CloudStorage/OneDrive-Persönlich/Datasets/tuc-actionpredictiondataset1/sequences/realsense/train/A000C000S000SEQ000/C000F00001_color.jpg'),
-        Image.open('/Users/schulzr/Library/CloudStorage/OneDrive-Persönlich/Datasets/tuc-actionpredictiondataset1/sequences/realsense/train/A000C000S000SEQ000/C000F00002_color.jpg'),
-        Image.open('/Users/schulzr/Library/CloudStorage/OneDrive-Persönlich/Datasets/tuc-actionpredictiondataset1/sequences/realsense/train/A000C000S000SEQ000/C000F00003_color.jpg'),
-        Image.open('/Users/schulzr/Library/CloudStorage/OneDrive-Persönlich/Datasets/tuc-actionpredictiondataset1/sequences/realsense/train/A000C000S000SEQ000/C000F00004_color.jpg'),
-        Image.open('/Users/schulzr/Library/CloudStorage/OneDrive-Persönlich/Datasets/tuc-actionpredictiondataset1/sequences/realsense/train/A000C000S000SEQ000/C000F00005_color.jpg'),
-        Image.open('/Users/schulzr/Library/CloudStorage/OneDrive-Persönlich/Datasets/tuc-actionpredictiondataset1/sequences/realsense/train/A000C000S000SEQ000/C000F00006_color.jpg'),
+        Image.open(f'{train_dir}/A000C000S000SEQ000/C000F00000_color.jpg'),
+        Image.open(f'{train_dir}/A000C000S000SEQ000/C000F00001_color.jpg'),
+        Image.open(f'{train_dir}/A000C000S000SEQ000/C000F00002_color.jpg'),
+        Image.open(f'{train_dir}/A000C000S000SEQ000/C000F00003_color.jpg'),
+        Image.open(f'{train_dir}/A000C000S000SEQ000/C000F00004_color.jpg'),
+        Image.open(f'{train_dir}/A000C000S000SEQ000/C000F00005_color.jpg'),
+        Image.open(f'{train_dir}/A000C000S000SEQ000/C000F00006_color.jpg'),
     ]
 
     for i in range(10):
