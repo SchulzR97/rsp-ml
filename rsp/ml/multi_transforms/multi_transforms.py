@@ -295,6 +295,78 @@ class BGR2RGB(MultiTransform):
 class RGB2BGR(BGR2RGB):
     pass
 
+class Scale(MultiTransform):
+    def __init__(self, scale):
+        super().__init__()
+
+        self.__toTensor__ = ToTensor()
+        self.__toPILImage__ = ToPILImage()
+
+        self.scale = scale
+
+        self.__toCVImage__ = ToCVImage()
+
+    def __call__(self, inputs):
+        self.__get_size__(inputs)
+        self.__reset__()
+        is_tensor = isinstance(inputs[0], torch.Tensor)
+        if not is_tensor:
+            inputs = self.__toTensor__(inputs)
+
+        results = []
+        for input in self.__toCVImage__(inputs):
+            w, h = self.size[1], self.size[0]
+            new_w, new_h = int(np.round(self.scale * w)), int(np.round(self.scale * h))
+            result = cv.resize(input, (new_w, new_h))
+            results.append(result)
+
+        if not is_tensor:
+            results = self.__toPILImage__(results)
+        return results
+    
+    def __reset__(self):
+        pass
+
+class Resize(MultiTransform):
+    def __init__(self, target_size:tuple[int, int], auto_crop:bool = True):
+        super().__init__()
+
+        self.__toTensor__ = ToTensor()
+        self.__toPILImage__ = ToPILImage()
+
+        self.target_size = target_size
+        self.auto_crop = auto_crop
+
+        self.__toCVImage__ = ToCVImage()
+
+    def __call__(self, inputs):
+        self.__get_size__(inputs)
+        self.__reset__()
+        is_tensor = isinstance(inputs[0], torch.Tensor)
+        if not is_tensor:
+            inputs = self.__toTensor__(inputs)
+
+        results = []
+        for input in self.__toCVImage__(inputs):
+            w, h = self.size[1], self.size[0]
+            if self.auto_crop:
+                scale = np.max([self.target_size[0] / self.size[0], self.target_size[1] / self.size[1]])
+                new_w, new_h = int(np.round(scale * w)), int(np.round(scale * h))
+                result = cv.resize(input, (new_w, new_h))
+
+                cx, cy = result.shape[1] // 2, result.shape[0] // 2
+                result = result[cy-self.target_size[0]//2:cy+self.target_size[0]//2, cx-self.target_size[1]//2:cx+self.target_size[1]//2]
+            else:
+                new_w, new_h = self.target_size[1], self.target_size[0]
+                result = cv.resize(input, (new_w, new_h))
+            results.append(result)
+
+        if not is_tensor:
+            results = self.__toPILImage__(results)
+        return results
+    
+    def __reset__(self):
+        pass
 
 if __name__ == '__main__':
     transforms = Compose([
@@ -302,6 +374,8 @@ if __name__ == '__main__':
         #RandomCrop(max_scale=1.1),
         Normalize(0, 1),
         Rotate(max_angle=5, auto_scale=True),
+        #Resize((500, 500)),
+        RandomCrop(max_scale=1.05),
         RGB2BGR(),
         ToCVImage(),
     ])
@@ -321,5 +395,6 @@ if __name__ == '__main__':
         for img, result in zip(imgs, results):
             cv.imshow('img', np.asarray(img))
             cv.imshow('result', result)
+            print(result.shape)
             cv.waitKey()
     pass
