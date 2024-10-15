@@ -73,7 +73,7 @@ class ToTensor(MultiTransform):
     def __call__(self, images:Image):
         results = []
         for img in images:
-            result = self.toTensor(img)
+            result = self.toTensor(img).float()
             results.append(result)
         return results
     
@@ -683,9 +683,9 @@ if __name__ == '__main__':
         #Resize((500, 500)),
         #RandomCrop(max_scale=1.05),
         #Color(0.5, 1.5),
-        BGR2GRAY(),
-        Brightness(0.5, 1.5),
-        #GaussianNoise(0.0, 0.005),
+        #BGR2GRAY(),
+        #Brightness(0.5, 1.5),
+        GaussianNoise(0.0, 0.005),
         #BGR2RGB(),
         #Stack(),
         #RandomHorizontalFlip(),
