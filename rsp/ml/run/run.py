@@ -24,6 +24,11 @@ class Run():
                 'val': [],
                 'avg': []
             }
+        if np.isnan(value):
+            if len(self.data[key][phase]['val']) > 0:
+                value = self.data[key][phase]['val'][-1]
+            else:
+                value = 0.
 
         self.data[key][phase]['val'].append(value)
         self.data[key][phase]['avg'].append(np.average(self.data[key][phase]['val'][-self.moving_average_epochs:]))
