@@ -34,6 +34,7 @@ class Run():
             os.mkdir(f'runs/{self.id}/plot')
 
         for key in self.data:
+            key_str = key.replace('_', ' ')
             fname = f'runs/{self.id}/plot/{key}.jpg'
 
             cmap = plt.get_cmap('tab20b')
@@ -45,9 +46,9 @@ class Run():
                 plt.plot(self.data[key][phase]['val'], color=colors[i], alpha=0.3)
                 plt.plot(self.data[key][phase]['avg'], label=phase, color=colors[i])
 
+            plt.title(key_str)
             plt.xlabel('episode')
-            plt.ylabel(key)
-            plt.ylabel(key)
+            plt.ylabel(key_str)
             plt.minorticks_on()
             plt.grid(which='minor', color='lightgray', linewidth=0.2)
             plt.grid(which='major', linewidth=.6)
