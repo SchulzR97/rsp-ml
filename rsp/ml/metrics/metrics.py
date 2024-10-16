@@ -138,6 +138,8 @@ def plot_confusion_matrix(
     if save_file_name is not None:
         cv.imwrite(save_file_name, img)
 
+    plt.close()
+
     return img
 
 if __name__ == '__main__':
@@ -152,7 +154,7 @@ if __name__ == '__main__':
         T.append(t)
     T = torch.cat(T)
 
-    dist = torch.normal(T.float(), 1.)
+    dist = torch.normal(T.float(), 1.5)
     Y = torch.argmax(dist, dim=1)
     Y = F.one_hot(Y, num_classes=num_classes)
 
@@ -167,4 +169,13 @@ if __name__ == '__main__':
         a_str = 'A' + a_str
         labels.append(a_str)
 
-    img = plot_confusion_matrix(conf_m, labels=labels, plt_show=True)
+    plt.plot(np.cos(np.linspace(0, 100, 100)))
+    plt.savefig('cos.jpg')
+    plt.close()
+
+    img = plot_confusion_matrix(conf_m, labels=labels, plt_show=False, save_file_name='confusion_matrix1.jpg')
+    img = plot_confusion_matrix(conf_m, labels=labels, plt_show=False, save_file_name='confusion_matrix2.jpg')
+
+    plt.plot(np.sin(np.linspace(0, 100, 100)))
+    plt.savefig('sin.jpg')
+    plt.close()
