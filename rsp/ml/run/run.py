@@ -15,6 +15,7 @@ class Run():
             self.__load__()
             
         self.moving_average_epochs = moving_average_epochs
+        self.__init_run_dir__()
     
     def append(self, key:str, phase:str, value):
         if not key in self.data:
@@ -82,8 +83,9 @@ class Run():
     def __init_run_dir__(self):
         if not os.path.isdir('runs'):
             os.mkdir('runs')
-        if not os.path.isdir(f'runs/{self.id}'):
-            os.mkdir(f'runs/{self.id}')
+        self.directory = f'runs/{self.id}'
+        if not os.path.isdir(self.directory):
+            os.mkdir(self.directory)
 
     def __load__(self):
         if not os.path.isfile(f'runs/{self.id}/data.json'):
