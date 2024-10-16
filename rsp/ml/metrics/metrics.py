@@ -14,7 +14,7 @@ def confusion_matrix(Y, T):
     cm = torch.zeros((num_classes, num_classes), dtype=torch.int64)
 
     for cy, ct in zip(classes_Y, classes_T):
-        cm[cy, ct] += 1
+        cm[ct, cy] += 1
 
     return cm
 
@@ -169,13 +169,5 @@ if __name__ == '__main__':
         a_str = 'A' + a_str
         labels.append(a_str)
 
-    plt.plot(np.cos(np.linspace(0, 100, 100)))
-    plt.savefig('cos.jpg')
-    plt.close()
-
-    img = plot_confusion_matrix(conf_m, labels=labels, plt_show=False, save_file_name='confusion_matrix1.jpg')
-    img = plot_confusion_matrix(conf_m, labels=labels, plt_show=False, save_file_name='confusion_matrix2.jpg')
-
-    plt.plot(np.sin(np.linspace(0, 100, 100)))
-    plt.savefig('sin.jpg')
-    plt.close()
+    img = plot_confusion_matrix(conf_m, labels=labels, plt_show=True)
+    img = plot_confusion_matrix(conf_m, labels=labels, plt_show=True)
