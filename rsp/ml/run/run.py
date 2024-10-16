@@ -35,7 +35,6 @@ class Run():
         self.data[key][phase]['avg'].append(np.average(self.data[key][phase]['val'][-self.moving_average_epochs:]))
 
     def plot(self):
-        self.__init_run_dir__()
         if not os.path.isdir(f'runs/{self.id}/plot'):
             os.mkdir(f'runs/{self.id}/plot')
 
@@ -86,6 +85,9 @@ class Run():
         self.directory = f'runs/{self.id}'
         if not os.path.isdir(self.directory):
             os.mkdir(self.directory)
+        self.plot_directory = f'{self.directory}/plot'
+        if not os.path.isdir(self.plot_directory):
+            os.mkdir(self.plot_directory)
 
     def __load__(self):
         if not os.path.isfile(f'runs/{self.id}/data.json'):
