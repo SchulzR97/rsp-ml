@@ -30,7 +30,9 @@ setup(
             'numpy',
             'opencv-python',
             # 'gym',
-            # 'matplotlib'
+            # 'matplotlib',
+            'pandas',
+            'seaborn'
         ], # add any additional packages that 
         # needs to be installed along with your package. Eg: 'caer'
         url = "https://github.com/SchulzR97/rsp-ml",
