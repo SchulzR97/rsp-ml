@@ -320,6 +320,8 @@ class Scale(MultiTransform):
             result = cv.resize(input, (new_w, new_h))
             results.append(result)
 
+        results = self.__toTensor__(results)
+
         if not is_tensor:
             results = self.__toPILImage__(results)
         return results
@@ -685,7 +687,9 @@ if __name__ == '__main__':
         #Color(0.5, 1.5),
         #BGR2GRAY(),
         #Brightness(0.5, 1.5),
-        GaussianNoise(0.0, 0.005),
+        #GaussianNoise(0.0, 0.005),
+        RGB2BGR(),
+        Scale(0.5),
         #BGR2RGB(),
         #Stack(),
         #RandomHorizontalFlip(),
@@ -694,16 +698,16 @@ if __name__ == '__main__':
     ])
 
     #sequence_dir = f'/media/schulzr/ACA02F26A02EF70C/data/tuc-actionpredictiondataset/sequences/realsense/train'
-    sequence_dir = '/Users/schulzr/Library/CloudStorage/OneDrive-Persönlich/Datasets/TUC-ActionPrediction/sequences/train/A001/A001C001S000SEQ004'
+    sequence_dir = '/Users/schulzr/Documents/Datasets/tuc-actionpredictiondataset/sequences/realsense/train/A000C000S000SEQ000'
 
     imgs = [
-        Image.open(f'{sequence_dir}/01126.jpg'),
-        Image.open(f'{sequence_dir}/01127.jpg'),
-        Image.open(f'{sequence_dir}/01128.jpg'),
-        Image.open(f'{sequence_dir}/01129.jpg'),
-        Image.open(f'{sequence_dir}/01130.jpg'),
-        Image.open(f'{sequence_dir}/01131.jpg'),
-        Image.open(f'{sequence_dir}/01132.jpg'),
+        Image.open(f'{sequence_dir}/C000F00000_color.jpg'),
+        Image.open(f'{sequence_dir}/C000F00001_color.jpg'),
+        Image.open(f'{sequence_dir}/C000F00002_color.jpg'),
+        Image.open(f'{sequence_dir}/C000F00003_color.jpg'),
+        Image.open(f'{sequence_dir}/C000F00004_color.jpg'),
+        Image.open(f'{sequence_dir}/C000F00005_color.jpg'),
+        Image.open(f'{sequence_dir}/C000F00006_color.jpg'),
     ]
 
     for i in range(10):
