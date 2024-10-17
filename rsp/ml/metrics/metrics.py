@@ -41,19 +41,43 @@ def confusion(Y, T):
     return true_positives, false_positives, true_negatives, false_negatives
 
 def TP(Y, T):
-    tp, fp, tn, fn = confusion(Y, T)
+    assert torch.all(Y <= 1) and torch.all(Y >= 0), 'Expected 0 <= Y <= 1'
+    
+    Y_pos = Y >= 0.5
+    T_pos = T >= 0.5
+
+    mask = torch.bitwise_and(Y_pos, T_pos)
+    tp = mask.sum().item()
     return tp
 
 def TN(Y, T):
-    tp, fp, tn, fn = confusion(Y, T)
+    assert torch.all(Y <= 1) and torch.all(Y >= 0), 'Expected 0 <= Y <= 1'
+    
+    Y_neg = Y < 0.5
+    T_neg = T < 0.5
+
+    mask = torch.bitwise_and(Y_neg, T_neg)
+    tn = mask.sum().item()
     return tn
 
 def FP(Y, T):
-    tp, fp, tn, fn = confusion(Y, T)
+    assert torch.all(Y <= 1) and torch.all(Y >= 0), 'Expected 0 <= Y <= 1'
+    
+    Y_pos = Y >= 0.5
+    T_neg = T < 0.5
+
+    mask = torch.bitwise_and(Y_pos, T_neg)
+    fp = mask.sum().item()
     return fp
 
 def FN(Y, T):
-    tp, fp, tn, fn = confusion(Y, T)
+    assert torch.all(Y <= 1) and torch.all(Y >= 0), 'Expected 0 <= Y <= 1'
+    
+    Y_neg = Y < 0.5
+    T_pos = T >= 0.5
+
+    mask = torch.bitwise_and(Y_neg, T_pos)
+    fn = mask.sum().item()
     return fn
 
 def FPR(Y, T):
@@ -143,6 +167,24 @@ def plot_confusion_matrix(
     return img
 
 if __name__ == '__main__':
+    Y = torch.tensor([
+        [0.1, 0.1, 0.8],
+        [0.95, 0.03, 0.02],
+        [0.05, 0.9, 0.05]
+    ])
+    T = torch.tensor([
+        [0, 0, 1],
+        [1, 0, 0],
+        [0, 1, 0]
+    ])
+
+    tp = TP(Y, T)
+    tn = TN(Y, T)
+    fp = FP(Y, T)
+    fn = FN(Y, T)
+
+    f1 = F1_Score(Y, T)
+
     epsilon = 0.2
     num_elements = 1000
     num_classes = 10
