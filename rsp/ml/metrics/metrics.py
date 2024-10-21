@@ -140,7 +140,7 @@ def plot_confusion_matrix(
                   columns = [i for i in labels])
     fig = plt.figure(figsize = (10,7))
 
-    sn.heatmap(df_cm, annot=True, cmap=cmap)
+    sn.heatmap(df_cm, annot=True, cmap=cmap, fmt='g')
     plt.xticks(rotation=45, ha="right")
     plt.yticks(rotation=0, ha="right")
     if title is not None:
@@ -186,8 +186,8 @@ if __name__ == '__main__':
     f1 = F1_Score(Y, T)
 
     epsilon = 0.2
-    num_elements = 1000
-    num_classes = 10
+    num_elements = 10000
+    num_classes = 7
 
     T = []
     for i in range(num_elements):
@@ -211,5 +211,4 @@ if __name__ == '__main__':
         a_str = 'A' + a_str
         labels.append(a_str)
 
-    img = plot_confusion_matrix(conf_m, labels=labels, plt_show=True)
     img = plot_confusion_matrix(conf_m, labels=labels, plt_show=True)

@@ -16,6 +16,9 @@ def __download_model_folder__():
 
 def load_model(model_id:str, force_reload:bool = False) -> torch.nn.Module:
     zip_file = Path(f'Model/{model_id}.zip')
+    model_def_py = zip_file.parent.joinpath(class_name).joinpath('model.py')
+    model_state_dict_file = zip_file.parent.joinpath(class_name).joinpath('state_dict.pt')
+
     if not zip_file.exists() or force_reload:
         __download_model_folder__()
         console.success(f'Downloaded models from {URL}.')
@@ -28,14 +31,12 @@ def load_model(model_id:str, force_reload:bool = False) -> torch.nn.Module:
 
     class_name = model_id.split('/')[-1]
 
-    model_def_py = zip_file.parent.joinpath(class_name).joinpath('model.py')
     spec = importlib.util.spec_from_file_location("model", model_def_py)
     foo = importlib.util.module_from_spec(spec)
     sys.modules["module.name"] = foo
     spec.loader.exec_module(foo)
     model:torch.nn.Module = foo.__dict__[class_name]()
-
-    model_state_dict_file = zip_file.parent.joinpath(class_name).joinpath('state_dict.pt')
+    
     with open(model_state_dict_file, 'rb') as f:
         model.load_state_dict(torch.load(f))
 
