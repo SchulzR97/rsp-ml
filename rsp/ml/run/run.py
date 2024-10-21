@@ -4,6 +4,7 @@ import numpy as np
 import json
 import matplotlib.pyplot as plt
 import torch
+import rsp.common.console as console
 
 class Run():
     def __init__(self, id = None, moving_average_epochs = 1000):
@@ -76,7 +77,9 @@ class Run():
         l = 0
         for key in self.data:
             for phase in self.data[key]:
-                l = len(self.data[key][phase]['val'])
+                l_temp = len(self.data[key][phase]['val'])
+                if l_temp > l:
+                    l = l_temp
         return l
 
     def __init_run_dir__(self):
@@ -103,7 +106,7 @@ class Run():
 
     def load_state_dict(self, model:torch.nn.Module, fname = 'state_dict.pt'):
         if not os.path.isfile(f'runs/{self.id}/{fname}'):
-            print(f'File runs/{self.id}/{fname} not found.')
+            console.warn(f'File runs/{self.id}/{fname} not found.')
             return
         with open(f'runs/{self.id}/{fname}', 'rb') as f:
             model.load_state_dict(torch.load(f))
