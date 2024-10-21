@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.0.28' 
+VERSION = '0.0.30' 
 DESCRIPTION = 'Machine Learning'
 with open('README.md') as f:
     LONG_DESCRIPTION = f.read()
@@ -32,7 +32,8 @@ setup(
             # 'gym',
             # 'matplotlib',
             'pandas',
-            'seaborn'
+            'seaborn',
+            'googledriver'
         ], # add any additional packages that 
         # needs to be installed along with your package. Eg: 'caer'
         url = "https://github.com/SchulzR97/rsp-ml",

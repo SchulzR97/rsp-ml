@@ -1,1 +1,1 @@
-from .model import *
+from .model import (load_model, TUC_ActionPrediction_model004)
