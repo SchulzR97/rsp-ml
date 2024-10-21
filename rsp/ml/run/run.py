@@ -5,6 +5,7 @@ import json
 import matplotlib.pyplot as plt
 import torch
 import rsp.common.console as console
+import pickle as pkl
 
 class Run():
     def __init__(self, id = None, moving_average_epochs = 1000):
@@ -110,3 +111,16 @@ class Run():
             return
         with open(f'runs/{self.id}/{fname}', 'rb') as f:
             model.load_state_dict(torch.load(f))
+
+    def save_model(self, model:torch.nn.Module, fname = 'model.pkl'):
+        self.__init_run_dir__()
+        with open(f'runs/{self.id}/{fname}', 'wb') as f:
+            pkl.dump(model, f)
+
+    def load_model(self, fname = 'model.pkl'):
+        if not os.path.isfile(f'runs/{self.id}/{fname}'):
+            console.warn(f'File runs/{self.id}/{fname} not found.')
+            return
+        with open(f'runs/{self.id}/{fname}', 'rb') as f:
+            model = pkl.load(f)
+        return model
