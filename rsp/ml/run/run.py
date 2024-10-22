@@ -63,6 +63,11 @@ class Run():
             plt.savefig(fname)
             plt.close()
 
+    def recalculate_moving_average(self):
+        for key in self.data:
+            for phase in self.data[key]:
+                self.data[key][phase]['avg'] = self.data[key][phase]['val'][-self.moving_average_epochs:]
+
     def save(self):
         self.__init_run_dir__()
         with open(f'runs/{self.id}/data.json', 'w') as f:
