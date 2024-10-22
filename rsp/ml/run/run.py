@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import torch
 import rsp.common.console as console
 import pickle as pkl
+import copy
 
 class Run():
     def __init__(self, id = None, moving_average_epochs = 1000):
@@ -110,8 +111,12 @@ class Run():
 
     def save_state_dict(self, state_dict, fname = 'state_dict.pt'):
         self.__init_run_dir__()
+        sd = copy.deepcopy(state_dict)
+        for k, v in sd.items():
+            if hasattr(v, 'cpu'):
+                sd[k] = v.cpu()
         with open(f'runs/{self.id}/{fname}', 'wb') as f:
-            torch.save(state_dict, f)
+            torch.save(sd, f)
 
     def load_state_dict(self, model:torch.nn.Module, fname = 'state_dict.pt'):
         if not os.path.isfile(f'runs/{self.id}/{fname}'):

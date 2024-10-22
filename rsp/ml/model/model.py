@@ -7,6 +7,7 @@ import rsp.common.console as console
 import torch
 
 TUC_ActionPrediction_model004 = 'TUC/ActionPrediction/Model4'
+TUC_ActionPrediction_model005 = 'TUC/ActionPrediction/Model5'
 
 URL = 'https://drive.google.com/drive/folders/1ulNnPqg-5wvenRl2CuJMxMMcaiYfHjQ9?usp=share_link'
 
@@ -41,4 +42,4 @@ def load_model(model_id:str, force_reload:bool = False) -> torch.nn.Module:
     return model
 
 if __name__ == '__main__':
-    model = load_model(TUC_ActionPrediction_model004)
+    model = load_model(TUC_ActionPrediction_model005)
