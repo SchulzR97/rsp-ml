@@ -66,7 +66,10 @@ class Run():
     def recalculate_moving_average(self):
         for key in self.data:
             for phase in self.data[key]:
-                self.data[key][phase]['avg'] = self.data[key][phase]['val'][-self.moving_average_epochs:]
+                for i in range(len(self.data[key][phase]['val'])):
+                    s_i = 0 if i - self.moving_average_epochs < 0 else i - self.moving_average_epochs
+                    e_i = i + 1
+                    self.data[key][phase]['avg'][i] = np.average(self.data[key][phase]['val'][s_i:e_i])
 
     def save(self):
         self.__init_run_dir__()

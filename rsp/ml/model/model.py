@@ -16,6 +16,7 @@ def __download_model_folder__():
 
 def load_model(model_id:str, force_reload:bool = False) -> torch.nn.Module:
     zip_file = Path(f'Model/{model_id}.zip')
+    class_name = model_id.split('/')[-1]
     model_def_py = zip_file.parent.joinpath(class_name).joinpath('model.py')
     model_state_dict_file = zip_file.parent.joinpath(class_name).joinpath('state_dict.pt')
 
@@ -27,9 +28,6 @@ def load_model(model_id:str, force_reload:bool = False) -> torch.nn.Module:
 
     with zipfile.ZipFile(zip_file, 'r') as zip_ref:
         zip_ref.extractall(zip_file.parent)
-    pass
-
-    class_name = model_id.split('/')[-1]
 
     spec = importlib.util.spec_from_file_location("model", model_def_py)
     foo = importlib.util.module_from_spec(spec)
