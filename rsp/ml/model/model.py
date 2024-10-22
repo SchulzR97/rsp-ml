@@ -22,7 +22,9 @@ def load_model(model_id:str, force_reload:bool = False) -> torch.nn.Module:
     model_state_dict_file = zip_file.parent.joinpath(class_name).joinpath('state_dict.pt')
 
     if not zip_file.exists() or force_reload:
+        waitControl = console.WaitControl(desc = 'Downloading models ')
         __download_model_folder__()
+        waitControl.destroy()
         console.success(f'Downloaded models from {URL}.')
 
     assert zip_file.exists(), f'File {zip_file} does not exist.'

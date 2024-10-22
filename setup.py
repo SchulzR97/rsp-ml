@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.0.37' 
+VERSION = '0.0.38' 
 DESCRIPTION = 'Machine Learning'
 with open('README.md') as f:
     LONG_DESCRIPTION = f.read()
@@ -26,7 +26,7 @@ setup(
             'torch',
             'torchvision',
             # 'torchaudio',
-            'rsp-common>=0.0.21',
+            'rsp-common>=0.0.23',
             'numpy',
             'opencv-python',
             # 'gym',
