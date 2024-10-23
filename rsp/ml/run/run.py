@@ -7,6 +7,8 @@ import torch
 import rsp.common.console as console
 import pickle as pkl
 import copy
+from glob import glob
+from pathlib import Path
 
 class Run():
     def __init__(self, id = None, moving_average_epochs = 1000):
@@ -15,10 +17,10 @@ class Run():
             self.data = {}
         else:
             self.id = id
-            self.__load__()
             
         self.moving_average_epochs = moving_average_epochs
         self.__init_run_dir__()
+        self.__load__()
     
     def append(self, key:str, phase:str, value):
         if not key in self.data:
@@ -38,12 +40,11 @@ class Run():
         self.data[key][phase]['avg'].append(np.average(self.data[key][phase]['val'][-self.moving_average_epochs:]))
 
     def plot(self):
-        if not os.path.isdir(f'runs/{self.id}/plot'):
-            os.mkdir(f'runs/{self.id}/plot')
+        self.__init_run_dir__()
 
         for key in self.data:
             key_str = key.replace('_', ' ')
-            fname = f'runs/{self.id}/plot/{key}.jpg'
+            plot_file = self.directory_plot.joinpath(f'{key}.jpg')
 
             cmap = plt.get_cmap('tab20b')
             colors = cmap(np.linspace(0, 1, len(self.data[key])))
@@ -61,7 +62,7 @@ class Run():
             plt.grid(which='minor', color='lightgray', linewidth=0.2)
             plt.grid(which='major', linewidth=.6)
             plt.legend()
-            plt.savefig(fname)
+            plt.savefig(plot_file)
             plt.close()
 
     def recalculate_moving_average(self):
@@ -93,21 +94,35 @@ class Run():
         return l
 
     def __init_run_dir__(self):
-        if not os.path.isdir('runs'):
-            os.mkdir('runs')
-        self.directory = f'runs/{self.id}'
-        if not os.path.isdir(self.directory):
-            os.mkdir(self.directory)
-        self.plot_directory = f'{self.directory}/plot'
-        if not os.path.isdir(self.plot_directory):
-            os.mkdir(self.plot_directory)
+        self.__directory_runs__ = Path('runs')
+        self.__directory_runs__.mkdir(parents=True, exist_ok=True)
+
+        self.directory = self.__directory_runs__.joinpath(self.id)
+        self.directory.mkdir(parents=True, exist_ok=True)
+
+        self.directory_plot = self.directory.joinpath('plot')
+        self.directory_plot.mkdir(parents=True, exist_ok=True)
+
+        self.file_data = self.directory.joinpath('data.json')
 
     def __load__(self):
-        if not os.path.isfile(f'runs/{self.id}/data.json'):
-            self.data = {}
+        if self.file_data.exists():
+            self.data = json.load(self.file_data.open('r'))
         else:
-            with open(f'runs/{self.id}/data.json', 'r') as f:
-                self.data = json.load(f)
+            self.data = {}
+
+    def __best_state_dict__(self, fname:str, id:str, suffix:str):
+        sd_files = glob(f'{self.directory}/*{id}*{suffix}')
+
+        best_acc = 0, None
+        for sd_file in sd_files:
+            if not '_acc' in sd_file:
+                continue
+            s_i = sd_file[:-len(suffix)].find('_acc') + 4
+            acc = float(sd_file[s_i:-len(suffix)])
+            if acc > best_acc[0]:
+                best_acc = acc, Path(sd_file).name
+        return best_acc
 
     def save_state_dict(self, state_dict, fname = 'state_dict.pt'):
         self.__init_run_dir__()
@@ -115,25 +130,62 @@ class Run():
         for k, v in sd.items():
             if hasattr(v, 'cpu'):
                 sd[k] = v.cpu()
-        with open(f'runs/{self.id}/{fname}', 'wb') as f:
+
+        file_state_dict = self.directory.joinpath(fname)
+        with file_state_dict.open('wb') as f:
             torch.save(sd, f)
 
+    def save_best_state_dict(self, state_dict, new_acc:float, epoch = None, fname = 'state_dict.pt'):
+        file_state_dict = self.directory.joinpath(fname)
+        suffix = file_state_dict.suffix
+        id = file_state_dict.name[:-len(suffix)]
+        
+        best_acc, best_file = self.__best_state_dict__(fname, id, suffix)
+
+        if new_acc > best_acc:
+            epoch_str = '' if epoch is None else f'_e{epoch}'
+            fname = f'{id}{epoch_str}_acc{new_acc}{suffix}'
+            self.save_state_dict(state_dict, fname)
+
     def load_state_dict(self, model:torch.nn.Module, fname = 'state_dict.pt'):
-        if not os.path.isfile(f'runs/{self.id}/{fname}'):
+        file_state_dict = self.directory.joinpath(fname)
+        if file_state_dict.exists():
+            with file_state_dict.open('rb') as f:
+                model.load_state_dict(torch.load(f))
+        else:
             console.warn(f'File runs/{self.id}/{fname} not found.')
             return
-        with open(f'runs/{self.id}/{fname}', 'rb') as f:
-            model.load_state_dict(torch.load(f))
+        
+    def load_best_state_dict(self, model:torch.nn.Module, fname = 'state_dict.pt'):
+        file_state_dict = self.directory.joinpath(fname)
+        suffix = file_state_dict.suffix
+        id = file_state_dict.name[:-len(suffix)]
+        
+        best_acc, best_file = self.__best_state_dict__(fname, id, suffix)
+        self.load_state_dict(model, best_file)
 
-    def save_model(self, model:torch.nn.Module, fname = 'model.pkl'):
+    def pickle_dump(self, model:torch.nn.Module, fname = 'model.pkl'):
         self.__init_run_dir__()
-        with open(f'runs/{self.id}/{fname}', 'wb') as f:
+
+        file_pkl = self.directory.joinpath(fname)
+        with file_pkl.open('wb') as f:
             pkl.dump(model, f)
 
-    def load_model(self, fname = 'model.pkl'):
-        if not os.path.isfile(f'runs/{self.id}/{fname}'):
+    def pickle_load(self, fname = 'model.pkl'):
+        file_pkl = self.directory.joinpath(fname)
+        if file_pkl.exists():
+            with open(file_pkl, 'rb') as f:
+                model = pkl.load(f)
+        else:
             console.warn(f'File runs/{self.id}/{fname} not found.')
             return
-        with open(f'runs/{self.id}/{fname}', 'rb') as f:
-            model = pkl.load(f)
         return model
+    
+if __name__ == '__main__':
+    run = Run('test')
+    run.save_best_state_dict(torch.nn.Linear(10, 10).state_dict(), 0.919342, 80)
+    run.save_best_state_dict(torch.nn.Linear(10, 10).state_dict(), 0.899342, 81)
+    run.save_best_state_dict(torch.nn.Linear(10, 10).state_dict(), 0.999342, 82)
+
+    run.load_best_state_dict(torch.nn.Linear(10, 10))
+    pass
