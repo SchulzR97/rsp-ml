@@ -163,6 +163,7 @@ class Run():
         
         best_acc, best_file = self.__best_state_dict__(fname, id, suffix)
         self.load_state_dict(model, best_file)
+        console.success(f'Loaded {best_file}')
 
     def pickle_dump(self, model:torch.nn.Module, fname = 'model.pkl'):
         self.__init_run_dir__()
