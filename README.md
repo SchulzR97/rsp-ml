@@ -7,3 +7,4 @@ This library provides machine learning utilities.
 ## 2 Modules
 ### 2.1 rsp.ml.metrics
 
+![](documentation/image/confusion_matrix.jpg)
