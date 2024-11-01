@@ -72,6 +72,7 @@ class Run():
                     s_i = 0 if i - self.moving_average_epochs < 0 else i - self.moving_average_epochs
                     e_i = i + 1
                     self.data[key][phase]['avg'][i] = np.average(self.data[key][phase]['val'][s_i:e_i])
+                self.data[key][phase]['avg'] = self.data[key][phase]['avg'][:len(self.data[key][phase]['val'])]
 
     def save(self):
         self.__init_run_dir__()
