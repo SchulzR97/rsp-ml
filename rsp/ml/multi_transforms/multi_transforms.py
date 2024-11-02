@@ -7,10 +7,21 @@ import cv2 as cv
 import numpy as np
 
 class MultiTransform():
+    """
+    MultiTransform is an extension to keep the same transformation over a sequence of images instead of initializing a new transformation for every single image. It is inspired by `torchvision.transforms` and could be used for video augmentation. Use `rsp.ml.multi_transforms.Compose`to combine multiple image sequence transformations.
+    
+    > **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
+    """
     def __init__(self):
+        """
+        Initializes a new instance
+        """
         pass
 
     def __call__(self, input):
+        """
+        
+        """
         raise NotImplementedError()
     
     def __get_size__(self, imgs):
@@ -70,7 +81,7 @@ class ToTensor(MultiTransform):
 
         self.toTensor = torchvision.transforms.ToTensor()
 
-    def __call__(self, images:Image):
+    def __call__(self, images) -> List[torch.Tensor]:
         results = []
         for img in images:
             result = self.toTensor(img).float()
@@ -125,6 +136,9 @@ class CenterCrop(MultiTransform):
 
 class RandomCrop(MultiTransform):
     def __init__(self, max_scale = 2):
+        """
+        Test
+        """
         super().__init__()
 
         if max_scale < 1:
@@ -581,6 +595,9 @@ class Stack(MultiTransform):
         pass
 
 class BGR2GRAY(MultiTransform):
+    """
+    Test Description
+    """
     def __init__(self):
         super().__init__()
 

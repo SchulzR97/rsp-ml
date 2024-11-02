@@ -289,14 +289,20 @@ def recall(Y:torch.Tensor, T:torch.Tensor) -> float:
     rec = tp / (tp + fn)
     return rec
 
+#__equation__ $precision = \frac{TP}{TP + FP}$
+#__equation__ $recall = \frac{TP}{TP + FN}$
+#__equation__ $F_1 = \frac{2 \cdot precision \cdot recall}{precision + recall} = \frac{2 \cdot TP}{2 \cdot TP + FP + FN}$
+#__example__ import rsp.ml.metrics as m\n
+#__example__ Y = torch.tensor([\n\t\t[0.87, 0.01, 0.05, 0.07],
+#__example__ \t\t[0.02, 0.09, 0.86, 0.03]
+#__example__ \t])
+#__example__ T = torch.tensor([\n\t\t[1., 0., 0., 0.],\n\t\t[0., 1., 0., 0.]\n\t])
+#__example__ \nf1score = m.F1_Score(Y, T)
+#__example__ \nprint(f1score) --> 0.5
 def F1_Score(Y:torch.Tensor, T:torch.Tensor) -> float:
     """
     F1 Score. Expected input shape: (batch_size, num_classes)
 
-    precision = TP / (TP + FP)
-    recall = TP / (TP + FN)
-    F1 = 2 * precision * recall / (precision + recall) = 2 * TP / (2 * TP + FP + FN)
-    
     Parameters
     ----------
     Y : torch.Tensor
@@ -309,6 +315,8 @@ def F1_Score(Y:torch.Tensor, T:torch.Tensor) -> float:
     float
         F1 Score
     """
+    # Formular
+
     assert Y.shape == T.shape, f'Expected Y and T to have the same shape.'
     assert torch.all(Y >= 0) and torch.all(Y <= 1), f'Expected 0 <= Y <= 1'
     assert torch.all(T >= 0) and torch.all(T <= 1), f'Expected 0 <= T <= 1'
@@ -470,6 +478,7 @@ def top_10_accuracy(Y:torch.Tensor, T:torch.Tensor) -> float:
 
     return top_k_accuracy(Y, T, 10)
 
+#__image__ ![](documentation/image/confusion_matrix.jpg)
 def plot_confusion_matrix(
         confusion_matrix:torch.Tensor,
         labels:List[str] = None,
@@ -492,7 +501,7 @@ def plot_confusion_matrix(
         Seaborn cmap, see https://r02b.github.io/seaborn_palettes/
     xlabel : str, optional, default = 'Predicted label'
         X-Axis label
-    ylabel : str, optional, default = 'True label
+    ylabel : str, optional, default = 'True label'
         Y-Axis label
     title : str, optional, default = 'Confusion Matrix'
         Title of the plot
@@ -506,6 +515,7 @@ def plot_confusion_matrix(
     np.array
         Image of the confusion matrix
     """
+    # test
     if labels is None:
         labels = [f'Class {i+1}' for i in range(confusion_matrix.shape[0])]
 
@@ -542,7 +552,7 @@ def plot_confusion_matrix(
 if __name__ == '__main__':
     Y = torch.tensor([
         [0.1, 0.1, 0.8],
-        [0.95, 0.03, 0.02],
+        [0.03, 0.95, 0.02],
         [0.05, 0.9, 0.05]
     ])
     T = torch.tensor([
