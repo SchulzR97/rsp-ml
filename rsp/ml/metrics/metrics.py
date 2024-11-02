@@ -229,11 +229,10 @@ def TPR(Y:torch.Tensor, T:torch.Tensor) -> float:
     tpr = tp / (tp + fn)
     return tpr
 
+#__equation__ $precision = \frac{TP}{TP + FP}$
 def precision(Y:torch.Tensor, T:torch.Tensor) -> float:
     """
     Precision. Expected input shape: (batch_size, num_classes)
-
-    precision = TP / (TP + FP)
 
     Parameters
     ----------
@@ -259,11 +258,10 @@ def precision(Y:torch.Tensor, T:torch.Tensor) -> float:
     prec = tp / (tp + fp)
     return prec
 
+#__equation__ $recall = \frac{TP}{TP + FN}$
 def recall(Y:torch.Tensor, T:torch.Tensor) -> float:
     """
     Recall. Expected input shape: (batch_size, num_classes)
-
-    recall = TP / (TP + FN)
 
     Parameters
     ----------

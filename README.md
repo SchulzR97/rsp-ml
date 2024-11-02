@@ -346,8 +346,6 @@ Image of the confusion matrix : np.array
 
 Precision. Expected input shape: (batch_size, num_classes)
 
-precision = TP / (TP + FP)
-
 **Parameters**
 
 | Name | Type | Description |
@@ -359,6 +357,12 @@ precision = TP / (TP + FP)
 
 Precision : float
 
+**Equations**
+
+$precision = \frac{TP}{TP + FP}$
+
+
+
 ## 1.12 recall
 
 [TOC](#table-of-contents)
@@ -366,8 +370,6 @@ Precision : float
 **Description**
 
 Recall. Expected input shape: (batch_size, num_classes)
-
-recall = TP / (TP + FN)
 
 **Parameters**
 
@@ -379,6 +381,12 @@ recall = TP / (TP + FN)
 **Returns**
 
 Recall : float
+
+**Equations**
+
+$recall = \frac{TP}{TP + FN}$
+
+
 
 ## 1.13 top\_10\_accuracy
 
@@ -888,7 +896,6 @@ MultiTransform is an extension to keep the same transformation over a sequence o
 [TOC](#table-of-contents)
 
 **Description**
-
 
         
 
