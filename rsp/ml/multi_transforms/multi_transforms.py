@@ -488,11 +488,14 @@ class Satturation(MultiTransform):
         self.rel = self.min_rel + np.random.random() * (self.max_rel - self.min_rel)
 
 class Color(MultiTransform):
-    def __init__(self, min_rel:float, max_rel:float):
+    def __init__(self, min_rel:float, max_rel:float, p = 1.):
         super().__init__()
 
         if min_rel < 0 or max_rel < 0 or min_rel > max_rel:
             raise Exception(f'min_rel and max_rel expected to be greater or equal 0. min_rel expected to be less or equal max_rel')
+
+        assert p >= 0. and p <= 1., f'Expected 0 <= p <= 1, but got p = {p}'
+        self.p = p
 
         self.__toTensor__ = ToTensor()
         self.__toPILImage__ = ToPILImage()
@@ -538,8 +541,11 @@ class Color(MultiTransform):
         return results
     
     def __reset__(self):
-        rel = self.min_rel + np.random.random() * (self.max_rel - self.min_rel)
-        self.offset_h = rel * 360
+        if np.random.random() < self.p:
+            rel = self.min_rel + np.random.random() * (self.max_rel - self.min_rel)
+            self.offset_h = rel * 360
+        else:
+            self.offset_h = 0
 
 class GaussianNoise(MultiTransform):
     def __init__(self, min_noise_level = 0., max_noise_level:float = 0.005):
