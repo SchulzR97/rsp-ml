@@ -521,6 +521,7 @@ class Color(MultiTransform):
             # h *= self.rel
             # h[h > 360] = 360
             # h[h < 0] = 0
+            h += self.offset_h
             h[h > 360] = h[h > 360] - 360
             hsv = cv.merge((h, s, v))
             result = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
