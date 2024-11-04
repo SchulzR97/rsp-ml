@@ -518,9 +518,10 @@ class Color(MultiTransform):
             hsv = cv.cvtColor(input, cv.COLOR_BGR2HSV)
             h, s, v = cv.split(hsv)
 
-            h *= self.rel
-            h[h > 360] = 360
-            h[h < 0] = 0
+            # h *= self.rel
+            # h[h > 360] = 360
+            # h[h < 0] = 0
+            h[h > 360] = h[h > 360] - 360
             hsv = cv.merge((h, s, v))
             result = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
 
@@ -536,7 +537,8 @@ class Color(MultiTransform):
         return results
     
     def __reset__(self):
-        self.rel = self.min_rel + np.random.random() * (self.max_rel - self.min_rel)
+        rel = self.min_rel + np.random.random() * (self.max_rel - self.min_rel)
+        self.offset_h = rel * 360
 
 class GaussianNoise(MultiTransform):
     def __init__(self, min_noise_level = 0., max_noise_level:float = 0.005):
