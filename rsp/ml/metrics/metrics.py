@@ -7,10 +7,32 @@ import pandas as pd
 import cv2 as cv
 from typing import List
 
+#__example__ #import rsp.ml.metrics as m
+#__example__ #import torch
+#__example__ 
+#__example__ Y = torch.tensor([
+#__example__ \t[0.1, 0.1, 0.8],
+#__example__ \t[0.03, 0.95, 0.02],
+#__example__ \t[0.05, 0.9, 0.05],
+#__example__ \t[0.01, 0.87, 0.12],
+#__example__ \t[0.04, 0.03, 0.93],
+#__example__ \t[0.94, 0.02, 0.06]
+#__example__ ])
+#__example__ T = torch.tensor([
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0]
+#__example__ ])
+#__example__ 
+#__example__ conf_mat = m.confusion_matrix(Y, T)
+#__example__ print(conf_mat) -> tensor([\n\t[1, 1, 0],\n\t[0, 2, 0],\n\t[0, 0, 2]\n])
 def confusion_matrix(Y:torch.Tensor, T:torch.Tensor) -> torch.Tensor:
     """
     Calculates the confusion matrix. Expected input shape: (batch_size, num_classes)
-    
+
     Parameters
     ----------
     Y : torch.Tensor
@@ -39,28 +61,28 @@ def confusion_matrix(Y:torch.Tensor, T:torch.Tensor) -> torch.Tensor:
 
     return cm
 
-def confusion(Y, T):
-    """ Returns the confusion matrix for the values in the `prediction` and `truth`
-        tensors, i.e. the amount of positions where the values of `prediction`
-        and `truth` are
-        - 1 and 1 (True Positive)
-        - 1 and 0 (False Positive)
-        - 0 and 0 (True Negative)
-        - 0 and 1 (False Negative)
-        """
-    confusion_vector = Y / T
-    # Element-wise division of the 2 tensors returns a new tensor which holds a
-    # unique value for each case:
-    #   1     where prediction and truth are 1 (True Positive)
-    #   inf   where prediction is 1 and truth is 0 (False Positive)
-    #   nan   where prediction and truth are 0 (True Negative)
-    #   0     where prediction is 0 and truth is 1 (False Negative)
-    true_positives = torch.sum(confusion_vector == 1).item()
-    false_positives = torch.sum(confusion_vector == float('inf')).item()
-    true_negatives = torch.sum(torch.isnan(confusion_vector)).item()
-    false_negatives = torch.sum(confusion_vector == 0).item()
-    return true_positives, false_positives, true_negatives, false_negatives
-
+#__example__ #import rsp.ml.metrics as m
+#__example__ #import torch
+#__example__ 
+#__example__ Y = torch.tensor([
+#__example__ \t[0.1, 0.1, 0.8],
+#__example__ \t[0.03, 0.95, 0.02],
+#__example__ \t[0.05, 0.9, 0.05],
+#__example__ \t[0.01, 0.87, 0.12],
+#__example__ \t[0.04, 0.03, 0.93],
+#__example__ \t[0.94, 0.02, 0.06]
+#__example__ ])
+#__example__ T = torch.tensor([
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0]
+#__example__ ])
+#__example__ 
+#__example__ tp = m.TP(Y, T)
+#__example__ print(tp) -> 5
 def TP(Y:torch.Tensor, T:torch.Tensor) -> int:
     """
     True positives. Expected input shape: (batch_size, num_classes)
@@ -89,6 +111,28 @@ def TP(Y:torch.Tensor, T:torch.Tensor) -> int:
     tp = mask.sum().item()
     return tp
 
+#__example__ #import rsp.ml.metrics as m
+#__example__ #import torch
+#__example__ 
+#__example__ Y = torch.tensor([
+#__example__ \t[0.1, 0.1, 0.8],
+#__example__ \t[0.03, 0.95, 0.02],
+#__example__ \t[0.05, 0.9, 0.05],
+#__example__ \t[0.01, 0.87, 0.12],
+#__example__ \t[0.04, 0.03, 0.93],
+#__example__ \t[0.94, 0.02, 0.06]
+#__example__ ])
+#__example__ T = torch.tensor([
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0]
+#__example__ ])
+#__example__ 
+#__example__ tn = m.TN(Y, T)
+#__example__ print(tn) -> 11
 def TN(Y:torch.Tensor, T:torch.Tensor) -> int:
     """
     True negatives. Expected input shape: (batch_size, num_classes)
@@ -117,6 +161,28 @@ def TN(Y:torch.Tensor, T:torch.Tensor) -> int:
     tn = mask.sum().item()
     return tn
 
+#__example__ #import rsp.ml.metrics as m
+#__example__ #import torch
+#__example__ 
+#__example__ Y = torch.tensor([
+#__example__ \t[0.1, 0.1, 0.8],
+#__example__ \t[0.03, 0.95, 0.02],
+#__example__ \t[0.05, 0.9, 0.05],
+#__example__ \t[0.01, 0.87, 0.12],
+#__example__ \t[0.04, 0.03, 0.93],
+#__example__ \t[0.94, 0.02, 0.06]
+#__example__ ])
+#__example__ T = torch.tensor([
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0]
+#__example__ ])
+#__example__ 
+#__example__ fp = m.FP(Y, T)
+#__example__ print(fp) -> 1
 def FP(Y:torch.Tensor, T:torch.Tensor) -> int:
     """
     False positives. Expected input shape: (batch_size, num_classes)
@@ -145,6 +211,28 @@ def FP(Y:torch.Tensor, T:torch.Tensor) -> int:
     fp = mask.sum().item()
     return fp
 
+#__example__ #import rsp.ml.metrics as m
+#__example__ #import torch
+#__example__ 
+#__example__ Y = torch.tensor([
+#__example__ \t[0.1, 0.1, 0.8],
+#__example__ \t[0.03, 0.95, 0.02],
+#__example__ \t[0.05, 0.9, 0.05],
+#__example__ \t[0.01, 0.87, 0.12],
+#__example__ \t[0.04, 0.03, 0.93],
+#__example__ \t[0.94, 0.02, 0.06]
+#__example__ ])
+#__example__ T = torch.tensor([
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0]
+#__example__ ])
+#__example__ 
+#__example__ fn = m.FN(Y, T)
+#__example__ print(fn) -> 1
 def FN(Y:torch.Tensor, T:torch.Tensor) -> int:
     """
     False negatives. Expected input shape: (batch_size, num_classes)
@@ -173,6 +261,28 @@ def FN(Y:torch.Tensor, T:torch.Tensor) -> int:
     fn = mask.sum().item()
     return fn
 
+#__example__ #import rsp.ml.metrics as m
+#__example__ #import torch
+#__example__ 
+#__example__ Y = torch.tensor([
+#__example__ \t[0.1, 0.1, 0.8],
+#__example__ \t[0.03, 0.95, 0.02],
+#__example__ \t[0.05, 0.9, 0.05],
+#__example__ \t[0.01, 0.87, 0.12],
+#__example__ \t[0.04, 0.03, 0.93],
+#__example__ \t[0.94, 0.02, 0.06]
+#__example__ ])
+#__example__ T = torch.tensor([
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0]
+#__example__ ])
+#__example__ 
+#__example__ fpr = m.FPR(Y, T)
+#__example__ print(fpr) -> 0.08333333333333333
 def FPR(Y:torch.Tensor, T:torch.Tensor) -> float:
     """
     False positive rate. Expected input shape: (batch_size, num_classes)
@@ -201,6 +311,28 @@ def FPR(Y:torch.Tensor, T:torch.Tensor) -> float:
     fpr = fp / (fp + tn)
     return fpr
 
+#__example__ #import rsp.ml.metrics as m
+#__example__ #import torch
+#__example__ 
+#__example__ Y = torch.tensor([
+#__example__ \t[0.1, 0.1, 0.8],
+#__example__ \t[0.03, 0.95, 0.02],
+#__example__ \t[0.05, 0.9, 0.05],
+#__example__ \t[0.01, 0.87, 0.12],
+#__example__ \t[0.04, 0.03, 0.93],
+#__example__ \t[0.94, 0.02, 0.06]
+#__example__ ])
+#__example__ T = torch.tensor([
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0]
+#__example__ ])
+#__example__ 
+#__example__ tpr = m.TPR(Y, T)
+#__example__ print(tpr) -> 0.8333333333333334
 def TPR(Y:torch.Tensor, T:torch.Tensor) -> float:
     """
     True positive rate. Expected input shape: (batch_size, num_classes)
@@ -229,6 +361,28 @@ def TPR(Y:torch.Tensor, T:torch.Tensor) -> float:
     tpr = tp / (tp + fn)
     return tpr
 
+#__example__ #import rsp.ml.metrics as m
+#__example__ #import torch
+#__example__ 
+#__example__ Y = torch.tensor([
+#__example__ \t[0.1, 0.1, 0.8],
+#__example__ \t[0.03, 0.95, 0.02],
+#__example__ \t[0.05, 0.9, 0.05],
+#__example__ \t[0.01, 0.87, 0.12],
+#__example__ \t[0.04, 0.03, 0.93],
+#__example__ \t[0.94, 0.02, 0.06]
+#__example__ ])
+#__example__ T = torch.tensor([
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0]
+#__example__ ])
+#__example__ 
+#__example__ precision = m.precision(Y, T)
+#__example__ print(precision) -> 0.8333333333333334
 #__equation__ $precision = \frac{TP}{TP + FP}$
 def precision(Y:torch.Tensor, T:torch.Tensor) -> float:
     """
@@ -258,6 +412,28 @@ def precision(Y:torch.Tensor, T:torch.Tensor) -> float:
     prec = tp / (tp + fp)
     return prec
 
+#__example__ #import rsp.ml.metrics as m
+#__example__ #import torch
+#__example__ 
+#__example__ Y = torch.tensor([
+#__example__ \t[0.1, 0.1, 0.8],
+#__example__ \t[0.03, 0.95, 0.02],
+#__example__ \t[0.05, 0.9, 0.05],
+#__example__ \t[0.01, 0.87, 0.12],
+#__example__ \t[0.04, 0.03, 0.93],
+#__example__ \t[0.94, 0.02, 0.06]
+#__example__ ])
+#__example__ T = torch.tensor([
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0]
+#__example__ ])
+#__example__ 
+#__example__ recall = m.recall(Y, T)
+#__example__ print(recall) -> 0.8333333333333334
 #__equation__ $recall = \frac{TP}{TP + FN}$
 def recall(Y:torch.Tensor, T:torch.Tensor) -> float:
     """
@@ -291,10 +467,22 @@ def recall(Y:torch.Tensor, T:torch.Tensor) -> float:
 #__equation__ $recall = \frac{TP}{TP + FN}$
 #__equation__ $F_1 = \frac{2 \cdot precision \cdot recall}{precision + recall} = \frac{2 \cdot TP}{2 \cdot TP + FP + FN}$
 #__example__ import rsp.ml.metrics as m\n
-#__example__ Y = torch.tensor([\n\t\t[0.87, 0.01, 0.05, 0.07],
-#__example__ \t\t[0.02, 0.09, 0.86, 0.03]
-#__example__ \t])
-#__example__ T = torch.tensor([\n\t\t[1., 0., 0., 0.],\n\t\t[0., 1., 0., 0.]\n\t])
+#__example__ Y = torch.tensor([
+#__example__ \t[0.1, 0.1, 0.8],
+#__example__ \t[0.03, 0.95, 0.02],
+#__example__ \t[0.05, 0.9, 0.05],
+#__example__ \t[0.01, 0.87, 0.12],
+#__example__ \t[0.04, 0.03, 0.93],
+#__example__ \t[0.94, 0.02, 0.06]
+#__example__ ])
+#__example__ T = torch.tensor([
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0]
+#__example__ ])
 #__example__ \nf1score = m.F1_Score(Y, T)
 #__example__ \nprint(f1score) --> 0.5
 def F1_Score(Y:torch.Tensor, T:torch.Tensor) -> float:
@@ -328,6 +516,25 @@ def F1_Score(Y:torch.Tensor, T:torch.Tensor) -> float:
     f1score = 2 * tp / (2 * tp + fp + fn)
     return f1score
 
+#__example__ import rsp.ml.metrics as m\n
+#__example__ Y = torch.tensor([
+#__example__ \t[0.1, 0.1, 0.8],
+#__example__ \t[0.03, 0.95, 0.02],
+#__example__ \t[0.05, 0.9, 0.05],
+#__example__ \t[0.01, 0.87, 0.12],
+#__example__ \t[0.04, 0.03, 0.93],
+#__example__ \t[0.94, 0.02, 0.06]
+#__example__ ])
+#__example__ T = torch.tensor([
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0]
+#__example__ ])
+#__example__ \ntop_k_accuracy = m.top_k_accuracy(Y, T, k = 3)
+#__example__ \nprint(top_k_accuracy) --> 1.0
 def top_k_accuracy(Y:torch.Tensor, T:torch.Tensor, k:int) -> float:
     """
     Top k accuracy. Expected input shape: (batch_size, num_classes)
@@ -361,6 +568,25 @@ def top_k_accuracy(Y:torch.Tensor, T:torch.Tensor, k:int) -> float:
     acc = tp / T[:, 0].numel()
     return acc
 
+#__example__ import rsp.ml.metrics as m\n
+#__example__ Y = torch.tensor([
+#__example__ \t[0.1, 0.1, 0.8],
+#__example__ \t[0.03, 0.95, 0.02],
+#__example__ \t[0.05, 0.9, 0.05],
+#__example__ \t[0.01, 0.87, 0.12],
+#__example__ \t[0.04, 0.03, 0.93],
+#__example__ \t[0.94, 0.02, 0.06]
+#__example__ ])
+#__example__ T = torch.tensor([
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0]
+#__example__ ])
+#__example__ \ntop_1_accuracy = m.top_1_accuracy(Y, T, k = 3)
+#__example__ \nprint(top_1_accuracy) --> 0.8333333333333334
 def top_1_accuracy(Y:torch.Tensor, T:torch.Tensor) -> float:
     """
     Top 1 accuracy. Expected input shape: (batch_size, num_classes)
@@ -384,6 +610,25 @@ def top_1_accuracy(Y:torch.Tensor, T:torch.Tensor) -> float:
 
     return top_k_accuracy(Y, T, 1)
 
+#__example__ import rsp.ml.metrics as m\n
+#__example__ Y = torch.tensor([
+#__example__ \t[0.1, 0.1, 0.8],
+#__example__ \t[0.03, 0.95, 0.02],
+#__example__ \t[0.05, 0.9, 0.05],
+#__example__ \t[0.01, 0.87, 0.12],
+#__example__ \t[0.04, 0.03, 0.93],
+#__example__ \t[0.94, 0.02, 0.06]
+#__example__ ])
+#__example__ T = torch.tensor([
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0]
+#__example__ ])
+#__example__ \ntop_2_accuracy = m.top_2_accuracy(Y, T, k = 3)
+#__example__ \nprint(top_2_accuracy) --> 1.0
 def top_2_accuracy(Y:torch.Tensor, T:torch.Tensor) -> float:
     """
     Top 2 accuracy. Expected input shape: (batch_size, num_classes)
@@ -407,6 +652,25 @@ def top_2_accuracy(Y:torch.Tensor, T:torch.Tensor) -> float:
 
     return top_k_accuracy(Y, T, 2)
 
+#__example__ import rsp.ml.metrics as m\n
+#__example__ Y = torch.tensor([
+#__example__ \t[0.1, 0.1, 0.8],
+#__example__ \t[0.03, 0.95, 0.02],
+#__example__ \t[0.05, 0.9, 0.05],
+#__example__ \t[0.01, 0.87, 0.12],
+#__example__ \t[0.04, 0.03, 0.93],
+#__example__ \t[0.94, 0.02, 0.06]
+#__example__ ])
+#__example__ T = torch.tensor([
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0]
+#__example__ ])
+#__example__ \ntop_3_accuracy = m.top_3_accuracy(Y, T, k = 3)
+#__example__ \nprint(top_3_accuracy) --> 1.0
 def top_3_accuracy(Y:torch.Tensor, T:torch.Tensor) -> float:
     """
     Top 3 accuracy. Expected input shape: (batch_size, num_classes)
@@ -430,6 +694,25 @@ def top_3_accuracy(Y:torch.Tensor, T:torch.Tensor) -> float:
 
     return top_k_accuracy(Y, T, 3)
 
+#__example__ import rsp.ml.metrics as m\n
+#__example__ Y = torch.tensor([
+#__example__ \t[0.1, 0.1, 0.8],
+#__example__ \t[0.03, 0.95, 0.02],
+#__example__ \t[0.05, 0.9, 0.05],
+#__example__ \t[0.01, 0.87, 0.12],
+#__example__ \t[0.04, 0.03, 0.93],
+#__example__ \t[0.94, 0.02, 0.06]
+#__example__ ])
+#__example__ T = torch.tensor([
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0]
+#__example__ ])
+#__example__ \ntop_5_accuracy = m.top_5_accuracy(Y, T, k = 3)
+#__example__ \nprint(top_5_accuracy) --> 1.0
 def top_5_accuracy(Y:torch.Tensor, T:torch.Tensor) -> float:
     """
     Top 5 accuracy. Expected input shape: (batch_size, num_classes)
@@ -453,6 +736,25 @@ def top_5_accuracy(Y:torch.Tensor, T:torch.Tensor) -> float:
 
     return top_k_accuracy(Y, T, 5)
 
+#__example__ import rsp.ml.metrics as m\n
+#__example__ Y = torch.tensor([
+#__example__ \t[0.1, 0.1, 0.8],
+#__example__ \t[0.03, 0.95, 0.02],
+#__example__ \t[0.05, 0.9, 0.05],
+#__example__ \t[0.01, 0.87, 0.12],
+#__example__ \t[0.04, 0.03, 0.93],
+#__example__ \t[0.94, 0.02, 0.06]
+#__example__ ])
+#__example__ T = torch.tensor([
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 1, 0],
+#__example__ \t[0, 0, 1],
+#__example__ \t[1, 0, 0]
+#__example__ ])
+#__example__ \ntop_10_accuracy = m.top_10_accuracy(Y, T, k = 3)
+#__example__ \nprint(top_10_accuracy) --> 1.0
 def top_10_accuracy(Y:torch.Tensor, T:torch.Tensor) -> float:
     """
     Top 10 accuracy. Expected input shape: (batch_size, num_classes)
@@ -551,18 +853,36 @@ if __name__ == '__main__':
     Y = torch.tensor([
         [0.1, 0.1, 0.8],
         [0.03, 0.95, 0.02],
-        [0.05, 0.9, 0.05]
+        [0.05, 0.9, 0.05],
+        [0.01, 0.87, 0.12],
+        [0.04, 0.03, 0.93],
+        [0.94, 0.02, 0.06]
     ])
     T = torch.tensor([
         [0, 0, 1],
         [1, 0, 0],
-        [0, 1, 0]
+        [0, 1, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+        [1, 0, 0]
     ])
+
+    conf_mat = confusion_matrix(Y, T)
+    print(conf_mat)
 
     tp = TP(Y, T)
     tn = TN(Y, T)
     fp = FP(Y, T)
     fn = FN(Y, T)
+
+    fpr = FPR(Y, T)
+    tpr = TPR(Y, T)
+
+    prec = precision(Y, T)
+    rec = recall(Y, T)
+
+    t1a = top_1_accuracy(Y, T)
+    t1a = top_1_accuracy(Y, T)
 
     f1 = F1_Score(Y, T)
 

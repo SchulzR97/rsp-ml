@@ -26,7 +26,7 @@ def get_name(line:str):
 def generate_file(base_module:str, number:str, modulename:str, filename:str):
     README = ''
     module = importlib.import_module(modulename)
-    for name, sub_module in module.__dict__.items():
+    for name, sub_module in sorted(module.__dict__.items()):
         if name.startswith('__'):
             continue
         if not hasattr(sub_module, '__package__'):
@@ -36,7 +36,7 @@ def generate_file(base_module:str, number:str, modulename:str, filename:str):
 
         constants = ''
         nr = 1
-        for member_name, obj in inspect.getmembers(sub_module):
+        for member_name, obj in sorted(inspect.getmembers(sub_module)):
             if hasattr(obj, '__module__') and not obj.__module__.startswith(base_module):
                 continue
             if hasattr(obj, '__package__') and not obj.__package__.startswith(base_module):
@@ -88,12 +88,41 @@ def generate_file(base_module:str, number:str, modulename:str, filename:str):
     return README
 
 def generate_class(base_module:str, number:str, obj):
-    README = generate_headline(base_module, number, f'{obj.__module__}.{obj.__name__}')
+    baseclass = ''
+    if hasattr(obj, '__bases__'):
+        bases = obj.__bases__
+        if len(bases) > 0:
+            baseclassmodule = bases[-1].__module__.replace(obj.__module__, '')
+            if baseclassmodule != '':
+                baseclassmodule += '.'
+            baseclass = f'{baseclassmodule}{bases[-1].__name__}'
+
+    README = generate_headline(base_module, number, f'{obj.__module__}.{obj.__name__}', appendix = f' : {baseclass}')
+
     doc = inspect.getdoc(obj)
 
     if doc is not None:
         README += '**Description**\n\n'
         README += f'{doc}\n\n'
+
+    comments = inspect.getcomments(obj)
+    result = parse_comments(comments)
+
+    if len(result['equations']) > 0:
+        README += '**Equations**\n\n'
+        for equation in result['equations']:
+            README += f'{equation}\n\n'
+    if len(result['examples']) > 0:
+        README += '**Example**\n\n'
+        README += '```python\n'
+        for example in result['examples']:
+            README += f'{example}\n'
+        README += '```'
+    if len(result['images']) > 0:
+        for image in result['images']:
+            README += f'{image}\n\n'
+
+    README += '\n'
 
     nr = 1
     for member_name, member in inspect.getmembers(obj):
@@ -119,10 +148,10 @@ def generate_function(base_module:str, number:str, obj):
     comments = inspect.getcomments(obj)
     
     README += generate_headline(base_module, number, f'{obj.__module__}.{obj.__qualname__}')
-    README += '**Description**\n\n'
 
     section = Section.DESCRIPTION
     if doc is not None:
+        README += '**Description**\n\n'
         lines = doc.split('\n')
 
         i = 0
@@ -214,7 +243,39 @@ def generate_function(base_module:str, number:str, obj):
 
     return README
 
-def generate_headline(base_module:str, number:str, name):
+def parse_comments(comments):
+    result = {
+        'equations': [],
+        'examples': [],
+        'images': []
+    }
+    if comments is not None:
+        comments = comments.replace('#', '')
+        comments = comments.replace('\\t', '\t')
+
+        lines = comments.split('\n')
+        for line in lines:
+            if '__equation__' in line:
+                line = line.replace('__equation__', '')
+                while line[0] == ' ':
+                    line = line[1:]
+                result['equations'].append(line)
+            elif '__example__' in line:
+                line = line.replace('__example__', '')
+                while len(line) > 0 and line[0] == ' ':
+                    line = line[1:]
+                line = line.replace('\t', '  ')
+                line = line.replace('\\n', '\n')
+                result['examples'].append(line)
+            elif '__image__' in line:
+                line = line.replace('__image__', '')
+                while len(line) > 0 and line[0] == ' ':
+                    line = line[1:]
+                result['images'].append(line)
+
+    return result
+
+def generate_headline(base_module:str, number:str, name, appendix = ''):
     name = name.replace(f'{base_module}.', '')
     name = name.replace('_', '\_')
     README = ''
@@ -222,7 +283,7 @@ def generate_headline(base_module:str, number:str, name):
     level = len(parts) - 1
     for i in range(level):
         README += '#'
-    README += f' {number} {parts[-1]}\n\n'
+    README += f' {number} {parts[-1]}{appendix}\n\n'
     README += '[TOC](#table-of-contents)\n\n'
     return README
 
@@ -269,6 +330,8 @@ def generate_TOC(README):
         TOC += f'- [{line}]'
         line = line.replace(' ', '-')
         line = line.replace('.', '')
+        line = line.replace(':', '-')
+        line = line.replace('---', '--')
         line = line.lower()
         TOC += f'(#{line})\n'
         pass

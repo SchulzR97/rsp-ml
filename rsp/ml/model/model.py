@@ -15,7 +15,27 @@ def __download_model_folder__():
     download_folder(URL)
     pass
 
+#__example__ #import rsp.ml.model as model
+#__example__
+#__example__ model004 = model.load_model(model.TUC_ActionPrediction_model004)
 def load_model(model_id:str, force_reload:bool = False) -> torch.nn.Module:
+    """
+    Loads a model from an pretrained PyTorch external source into memory.
+
+    > See Constants for available models
+
+    Parameters
+    ----------
+    model_id : str
+        ID of the model
+    force_reload : bool
+        Overwrite local file -> forces downlad.
+
+    Returns
+    -------
+    torch.nn.Module
+        Pretrained PyTorch model
+    """
     zip_file = Path(f'Model/{model_id}.zip')
     class_name = model_id.split('/')[-1]
     model_def_py = zip_file.parent.joinpath(class_name).joinpath('model.py')

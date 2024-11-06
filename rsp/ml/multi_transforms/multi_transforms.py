@@ -14,13 +14,18 @@ class MultiTransform():
     """
     def __init__(self):
         """
-        Initializes a new instance
+        Initializes a new instance.
         """
         pass
 
     def __call__(self, input):
         """
-        
+        Call self as a function.
+
+        Parameters
+        -----------
+        input : torch.Tensor<br>List[PIL.Image]<br>List[numpy.array]
+            Sequence of images
         """
         raise NotImplementedError()
     
@@ -34,8 +39,24 @@ class MultiTransform():
     def __reset__(self):
         raise NotImplementedError()
 
+#__example__ import rsp.ml.multi_transforms as t\n
+#__example__ transforms = t.Compose([
+#__example__ \tt.BGR2GRAY(),
+#__example__ \tt.Scale(0.5)
+#__example__ ])
 class Compose():
+    """
+    Composes several MultiTransforms together.
+    """
     def __init__(self, children:List[MultiTransform]):
+        """
+        Initializes a new instance.
+
+        Parameters
+        ----------
+        children : List[MultiTransform]
+            List of MultiTransforms to compose.
+        """
         self.children = children
         pass
 
@@ -51,7 +72,24 @@ class Compose():
         pass
 
 class Normalize(MultiTransform):
+    """
+    Normalize images with mean and standard deviation. Given mean: (mean[1],...,mean[n]) and std: (std[1],..,std[n]) for n channels, this transform will normalize each channel of the input torch.*Tensor i.e., output[channel] = (input[channel] - mean[channel]) / std[channel]
+    
+    > Based on torchvision.transforms.Normalize
+    """
     def __init__(self, mean, std, inplace = False):
+        """
+        Initializes a new instance.
+
+        Parameters
+        ----------
+        mean : List[float]
+            Sequence of means for each channel.
+        std : List[float]
+            Sequence of standard deviations for each channel.
+        inplace : bool
+            Set to True make this operation in-place.
+        """
         super().__init__()
 
         self.normalize = torchvision.transforms.Normalize(mean, std, inplace)
@@ -76,6 +114,9 @@ class Normalize(MultiTransform):
         pass
     
 class ToTensor(MultiTransform):
+    """
+    Converts a sequence of images to torch.Tensor.
+    """
     def __init__(self):
         super().__init__()
 
@@ -605,7 +646,7 @@ class Stack(MultiTransform):
 
 class BGR2GRAY(MultiTransform):
     """
-    Test Description
+    Converts a sequence of BGR images to grayscale images
     """
     def __init__(self):
         super().__init__()
