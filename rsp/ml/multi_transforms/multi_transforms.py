@@ -131,9 +131,21 @@ class ToTensor(MultiTransform):
     
     def __reset__(self):
         pass
-    
+
+#__image__ ![](documentation/image/multi_transforms.CenterCrop.png)
 class CenterCrop(MultiTransform):
+    """
+    Crops Images at the center after upscaling them. Dimensions kept the same.
+    """
     def __init__(self, max_scale = 2):
+        """
+        Initializes a new instance.
+
+        Parameters
+        ----------
+        max_scale : float
+            Images are scaled randomly between 1. and max_scale before cropping to original size.
+        """
         super().__init__()
 
         if max_scale < 1:
@@ -175,10 +187,19 @@ class CenterCrop(MultiTransform):
     def __reset__(self):
         self.__scale__ = 1. + np.random.random() * (self.max_scale - 1.)
 
+#__image__ ![](documentation/image/multi_transforms.RandomCrop.png)
 class RandomCrop(MultiTransform):
+    """
+    Crops Images at a random location after upscaling them. Dimensions kept the same.
+    """
     def __init__(self, max_scale = 2):
         """
-        Test
+        Initializes a new instance.
+
+        Parameters
+        ----------
+        max_scale : float
+            Images are scaled randomly between 1. and max_scale before cropping to original size.
         """
         super().__init__()
 
@@ -231,8 +252,21 @@ class RandomCrop(MultiTransform):
             self.__sx__ = int(np.round(np.random.random() * (new_w - w)))
             self.__sy__ = int(np.round(np.random.random () * (new_h - h)))
 
+#__image__ ![](documentation/image/multi_transforms.Rotate.png)
+#__equation__ $angle = -max\_angle + 2 \cdot random() \cdot max\_angle$
 class Rotate(MultiTransform):
+    """
+    Randomly rotates images.
+    """
     def __init__(self, max_angle = 180, auto_scale:bool = True):
+        """
+        Iitializes a new instance.
+
+        Parameters
+        ----------
+        max_angle : float
+            Maximal rotation in degrees | -max_angle <= rotate <= max_angle
+        """
         super().__init__()
 
         self.max_angle = max_angle
@@ -278,6 +312,9 @@ class Rotate(MultiTransform):
         self.__scale__ = 1.03 * np.max([new_w / w, new_h / h]) if self.auto_scale else 1.
 
 class ToNumpy(MultiTransform):
+    """
+    Converts a `torch.Tensor`to `numpy`
+    """
     def __init__(self):
         super().__init__()
 
@@ -289,6 +326,9 @@ class ToNumpy(MultiTransform):
         pass
 
 class ToCVImage(MultiTransform):
+    """
+    Converts a `torch.Tensor`to Open CV image by changing dimensions (d0, d1, d2) -> (d1, d2, d0) and converting `torch.Tensor` to `numpy`.
+    """
     def __init__(self):
         super().__init__()
 
@@ -308,6 +348,9 @@ class ToCVImage(MultiTransform):
         pass
 
 class ToPILImage(MultiTransform):
+    """
+    Converts sequence of images to sequence of `PIL.Image`.
+    """
     def __init__(self):
         super().__init__()
 
@@ -324,6 +367,9 @@ class ToPILImage(MultiTransform):
         pass
 
 class BGR2RGB(MultiTransform):
+    """
+    Converts sequence of BGR images to RGB images.
+    """
     def __init__(self):
         super().__init__()
 
@@ -348,6 +394,9 @@ class BGR2RGB(MultiTransform):
         pass
 
 class RGB2BGR(BGR2RGB):
+    """
+    Converts sequence of RGB images to BGR images.
+    """
     pass
 
 class Scale(MultiTransform):
@@ -646,7 +695,7 @@ class Stack(MultiTransform):
 
 class BGR2GRAY(MultiTransform):
     """
-    Converts a sequence of BGR images to grayscale images
+    Converts a sequence of BGR images to grayscale images.
     """
     def __init__(self):
         super().__init__()

@@ -982,9 +982,7 @@ Initializes a new instance.
 
 **Description**
 
-MultiTransform is an extension to keep the same transformation over a sequence of images instead of initializing a new transformation for every single image. It is inspired by `torchvision.transforms` and could be used for video augmentation. Use `rsp.ml.multi_transforms.Compose`to combine multiple image sequence transformations.
-
-> **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
+Converts sequence of BGR images to RGB images.
 
 
 ### 3.2.1 \_\_call\_\_
@@ -1046,9 +1044,9 @@ Initializes a new instance.
 
 **Description**
 
-MultiTransform is an extension to keep the same transformation over a sequence of images instead of initializing a new transformation for every single image. It is inspired by `torchvision.transforms` and could be used for video augmentation. Use `rsp.ml.multi_transforms.Compose`to combine multiple image sequence transformations.
+Crops Images at the center after upscaling them. Dimensions kept the same.
 
-> **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
+![](documentation/image/multi_transforms.CenterCrop.png)
 
 
 ### 3.4.1 \_\_call\_\_
@@ -1072,6 +1070,11 @@ Call self as a function.
 
 Initializes a new instance.
 
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| max_scale | float | Images are scaled randomly between 1. and max_scale before cropping to original size. |
 ## 3.5 Color : MultiTransform
 
 [TOC](#table-of-contents)
@@ -1252,9 +1255,7 @@ Initializes a new instance.
 
 **Description**
 
-MultiTransform is an extension to keep the same transformation over a sequence of images instead of initializing a new transformation for every single image. It is inspired by `torchvision.transforms` and could be used for video augmentation. Use `rsp.ml.multi_transforms.Compose`to combine multiple image sequence transformations.
-
-> **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
+Converts sequence of RGB images to BGR images.
 
 
 ### 3.10.1 \_\_call\_\_
@@ -1284,9 +1285,9 @@ Initializes a new instance.
 
 **Description**
 
-MultiTransform is an extension to keep the same transformation over a sequence of images instead of initializing a new transformation for every single image. It is inspired by `torchvision.transforms` and could be used for video augmentation. Use `rsp.ml.multi_transforms.Compose`to combine multiple image sequence transformations.
+Crops Images at a random location after upscaling them. Dimensions kept the same.
 
-> **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
+![](documentation/image/multi_transforms.RandomCrop.png)
 
 
 ### 3.11.1 \_\_call\_\_
@@ -1308,8 +1309,13 @@ Call self as a function.
 
 **Description**
 
-Test
+Initializes a new instance.
 
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| max_scale | float | Images are scaled randomly between 1. and max_scale before cropping to original size. |
 ## 3.12 RandomHorizontalFlip : MultiTransform
 
 [TOC](#table-of-contents)
@@ -1412,9 +1418,13 @@ Initializes a new instance.
 
 **Description**
 
-MultiTransform is an extension to keep the same transformation over a sequence of images instead of initializing a new transformation for every single image. It is inspired by `torchvision.transforms` and could be used for video augmentation. Use `rsp.ml.multi_transforms.Compose`to combine multiple image sequence transformations.
+Randomly rotates images.
 
-> **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
+**Equations**
+
+$angle = -max\_angle + 2 \cdot random() \cdot max\_angle$
+
+![](documentation/image/multi_transforms.Rotate.png)
 
 
 ### 3.15.1 \_\_call\_\_
@@ -1436,8 +1446,13 @@ Call self as a function.
 
 **Description**
 
-Initializes a new instance.
+Iitializes a new instance.
 
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| max_angle | float | Maximal rotation in degrees | -max_angle <= rotate <= max_angle |
 ## 3.16 Satturation : MultiTransform
 
 [TOC](#table-of-contents)
@@ -1540,9 +1555,7 @@ Initializes a new instance.
 
 **Description**
 
-MultiTransform is an extension to keep the same transformation over a sequence of images instead of initializing a new transformation for every single image. It is inspired by `torchvision.transforms` and could be used for video augmentation. Use `rsp.ml.multi_transforms.Compose`to combine multiple image sequence transformations.
-
-> **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
+Converts a `torch.Tensor`to Open CV image by changing dimensions (d0, d1, d2) -> (d1, d2, d0) and converting `torch.Tensor` to `numpy`.
 
 
 ### 3.19.1 \_\_call\_\_
@@ -1572,9 +1585,7 @@ Initializes a new instance.
 
 **Description**
 
-MultiTransform is an extension to keep the same transformation over a sequence of images instead of initializing a new transformation for every single image. It is inspired by `torchvision.transforms` and could be used for video augmentation. Use `rsp.ml.multi_transforms.Compose`to combine multiple image sequence transformations.
-
-> **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
+Converts a `torch.Tensor`to `numpy`
 
 
 ### 3.20.1 \_\_call\_\_
@@ -1604,9 +1615,7 @@ Initializes a new instance.
 
 **Description**
 
-MultiTransform is an extension to keep the same transformation over a sequence of images instead of initializing a new transformation for every single image. It is inspired by `torchvision.transforms` and could be used for video augmentation. Use `rsp.ml.multi_transforms.Compose`to combine multiple image sequence transformations.
-
-> **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
+Converts sequence of images to sequence of `PIL.Image`.
 
 
 ### 3.21.1 \_\_call\_\_
