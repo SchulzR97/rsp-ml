@@ -952,7 +952,7 @@ model004 = model.load_model(model.TUC_ActionPrediction_model004)
 
 **Description**
 
-Converts a sequence of BGR images to grayscale images
+Converts a sequence of BGR images to grayscale images.
 
 
 ### 3.1.1 \_\_call\_\_
@@ -1453,6 +1453,7 @@ Iitializes a new instance.
 | Name | Type | Description |
 |------|------|-------------|
 | max_angle | float | Maximal rotation in degrees | -max_angle <= rotate <= max_angle |
+| auto_scale | bool, default = True | Image will be resized when auto scale is activated to avoid black margins. |
 ## 3.16 Satturation : MultiTransform
 
 [TOC](#table-of-contents)

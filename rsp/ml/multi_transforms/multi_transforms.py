@@ -266,6 +266,8 @@ class Rotate(MultiTransform):
         ----------
         max_angle : float
             Maximal rotation in degrees | -max_angle <= rotate <= max_angle
+        auto_scale : bool, default = True
+            Image will be resized when auto scale is activated to avoid black margins.
         """
         super().__init__()
 
@@ -578,11 +580,11 @@ class Satturation(MultiTransform):
         self.rel = self.min_rel + np.random.random() * (self.max_rel - self.min_rel)
 
 class Color(MultiTransform):
-    def __init__(self, min_rel:float, max_rel:float, p = 1.):
+    def __init__(self, max_rel:float, p = 1.):
         super().__init__()
 
-        if min_rel < 0 or max_rel < 0 or min_rel > max_rel:
-            raise Exception(f'min_rel and max_rel expected to be greater or equal 0. min_rel expected to be less or equal max_rel')
+        if max_rel < 0. or max_rel > 1.:
+            raise Exception(f'Expected 0 <= max_rel <= 1, but got max_rel = {max_rel}')
 
         assert p >= 0. and p <= 1., f'Expected 0 <= p <= 1, but got p = {p}'
         self.p = p
@@ -590,7 +592,6 @@ class Color(MultiTransform):
         self.__toTensor__ = ToTensor()
         self.__toPILImage__ = ToPILImage()
 
-        self.min_rel = min_rel
         self.max_rel = max_rel
 
         self.__toCVImage__ = ToCVImage()
@@ -632,7 +633,7 @@ class Color(MultiTransform):
     
     def __reset__(self):
         if np.random.random() < self.p:
-            rel = self.min_rel + np.random.random() * (self.max_rel - self.min_rel)
+            rel = -self.max_rel + 2 * np.random.random() * self.max_rel
             self.offset_h = rel * 360
         else:
             self.offset_h = 0
