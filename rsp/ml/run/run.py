@@ -148,9 +148,11 @@ class Run():
             fname = f'{id}{epoch_str}_acc{new_acc}{suffix}'
             self.save_state_dict(state_dict, fname)
 
-    def load_state_dict(self, model:torch.nn.Module, fname = 'state_dict.pt'):
+    def load_state_dict(self, model:torch.nn.Module, fname = None):
+        if fname is None:
+            fname = 'state_dict.pt'
         file_state_dict = self.directory.joinpath(fname)
-        if file_state_dict is not None and file_state_dict.exists():
+        if file_state_dict.exists():
             with file_state_dict.open('rb') as f:
                 model.load_state_dict(torch.load(f))
         else:
