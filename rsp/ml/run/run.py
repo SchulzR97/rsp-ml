@@ -150,7 +150,7 @@ class Run():
 
     def load_state_dict(self, model:torch.nn.Module, fname = 'state_dict.pt'):
         file_state_dict = self.directory.joinpath(fname)
-        if file_state_dict.exists():
+        if file_state_dict is not None and file_state_dict.exists():
             with file_state_dict.open('rb') as f:
                 model.load_state_dict(torch.load(f))
         else:
