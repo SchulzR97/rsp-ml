@@ -4,7 +4,7 @@ import numpy as np
 import json
 import matplotlib.pyplot as plt
 import torch
-#import rsp.common.console as console
+import rsp.common.console as console
 import pickle as pkl
 import copy
 from glob import glob
@@ -154,7 +154,7 @@ class Run():
             with file_state_dict.open('rb') as f:
                 model.load_state_dict(torch.load(f))
         else:
-            #console.warn(f'File runs/{self.id}/{fname} not found.')
+            console.warn(f'File runs/{self.id}/{fname} not found.')
             return
         
     def load_best_state_dict(self, model:torch.nn.Module, fname = 'state_dict.pt'):
@@ -164,7 +164,7 @@ class Run():
         
         best_acc, best_file = self.__best_state_dict__(fname, id, suffix)
         self.load_state_dict(model, best_file)
-        #console.success(f'Loaded {best_file}')
+        console.success(f'Loaded {best_file}')
 
     def pickle_dump(self, model:torch.nn.Module, fname = 'model.pkl'):
         self.__init_run_dir__()
@@ -179,7 +179,7 @@ class Run():
             with open(file_pkl, 'rb') as f:
                 model = pkl.load(f)
         else:
-            #console.warn(f'File runs/{self.id}/{fname} not found.')
+            console.warn(f'File runs/{self.id}/{fname} not found.')
             return
         return model
     
