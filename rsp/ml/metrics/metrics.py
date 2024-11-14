@@ -210,8 +210,8 @@ def FP(Y:torch.Tensor, T:torch.Tensor, threshold:float = 0.5) -> int:
     assert torch.all(T >= 0) and torch.all(T <= 1), f'Expected 0 <= T <= 1'
     assert len(T.shape) == 2, f'Expected shape (batch_size, num_classes), but got shape of {T.shape}'
     
-    Y_pos = Y >= 0.5
-    T_neg = T < 0.5
+    Y_pos = Y >= threshold
+    T_neg = T < threshold
 
     mask = torch.bitwise_and(Y_pos, T_neg)
     fp = mask.sum().item()
@@ -977,6 +977,8 @@ def plot_ROC(
             class_data[c][1].append(t)
         for c in class_data:
             Y, T = class_data[c]
+            if len(Y) == 0:
+                continue
             Y = torch.stack(Y, dim = 0)
             T = torch.stack(T, dim = 0)
             FPRs, TPRs = ROC(Y, T, num_thresholds)
