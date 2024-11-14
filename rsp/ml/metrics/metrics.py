@@ -961,7 +961,7 @@ def plot_ROC(
         plt.title(title)
 
     FPRs, TPRs = ROC(Y, T, num_thresholds)
-    roc_auc = ROC_AUC(Y, T)
+    roc_auc = ROC_AUC(Y, T, num_thresholds)
     label_str = '$ROC\,AUC_ = ' + f'{roc_auc:0.4f}' + '$'
     plt.plot(FPRs, TPRs, label = label_str)
     plt.fill_between(FPRs, TPRs, 0, alpha = 0.2)
