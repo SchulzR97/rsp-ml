@@ -5,12 +5,12 @@ This project provides some usefull machine learning functionality.
 # Table of Contents
 
 - [1 metrics](#1-metrics)
-  - [1.1 F1\_Score](#11-f1\_score)
-  - [1.2 FN](#12-fn)
-  - [1.3 FP](#13-fp)
-  - [1.4 FPR](#14-fpr)
-  - [1.5 ROC](#15-roc)
-  - [1.6 ROC\_AUC](#16-roc\_auc)
+  - [1.1 AUROC](#11-auroc)
+  - [1.2 F1\_Score](#12-f1\_score)
+  - [1.3 FN](#13-fn)
+  - [1.4 FP](#14-fp)
+  - [1.5 FPR](#15-fpr)
+  - [1.6 ROC](#16-roc)
   - [1.7 TN](#17-tn)
   - [1.8 TP](#18-tp)
   - [1.9 TPR](#19-tpr)
@@ -119,7 +119,27 @@ This project provides some usefull machine learning functionality.
 
 The module `rsp.ml.metrics` provides some functionality to quantify the quality of predictions.
 
-## 1.1 F1\_Score
+## 1.1 AUROC
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Calculates the Area under the Receiver Operation Chracteristic Curve.
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| Y | torch.Tensor | Prediction |
+| T | torch.Tensor | True values |
+| num_thresholds | int, default = 100 | Number of thresholds to compute. |
+
+**Returns**
+
+Receiver Operation Chracteristic Area under the Curve : float
+
+## 1.2 F1\_Score
 
 [TOC](#table-of-contents)
 
@@ -176,7 +196,7 @@ f1score = m.F1_Score(Y, T)
 print(f1score) --> 0.5
 ```
 
-## 1.2 FN
+## 1.3 FN
 
 [TOC](#table-of-contents)
 
@@ -223,7 +243,7 @@ fn = m.FN(Y, T)
 print(fn) -> 1
 ```
 
-## 1.3 FP
+## 1.4 FP
 
 [TOC](#table-of-contents)
 
@@ -270,7 +290,7 @@ fp = m.FP(Y, T)
 print(fp) -> 1
 ```
 
-## 1.4 FPR
+## 1.5 FPR
 
 [TOC](#table-of-contents)
 
@@ -317,7 +337,7 @@ fpr = m.FPR(Y, T)
 print(fpr) -> 0.08333333333333333
 ```
 
-## 1.5 ROC
+## 1.6 ROC
 
 [TOC](#table-of-contents)
 
@@ -358,26 +378,6 @@ dist = torch.normal(T.float(), 1.5)
 Y = F.softmax(dist, dim = 1)
 FPRs, TPRs = m.ROC(Y, T)
 ```
-
-## 1.6 ROC\_AUC
-
-[TOC](#table-of-contents)
-
-**Description**
-
-Calculates the Receiver Operation Chracteristic Area under the Curve.
-
-**Parameters**
-
-| Name | Type | Description |
-|------|------|-------------|
-| Y | torch.Tensor | Prediction |
-| T | torch.Tensor | True values |
-| num_thresholds | int, default = 100 | Number of thresholds to compute. |
-
-**Returns**
-
-Receiver Operation Chracteristic Area under the Curve : float
 
 ## 1.7 TN
 
