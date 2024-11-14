@@ -587,6 +587,7 @@ Plot the receiver operating characteristic.
 | num_thresholds | int, default = 100 | Number of thresholds to compute. |
 | title | str, optional, default = 'Confusion Matrix' | Title of the plot |
 | class_curves | bool, default = False | Plot ROC curve for each class |
+| labels | str, optional, default = None | Class labels -> automatic labeling C000, ..., CXXX if labels is None |
 | plt_show | bool, optional, default = False | Set to True to show the plot |
 | save_file_name | str, optional, default = None | If not None, the plot is saved under the specified save_file_name. |
 

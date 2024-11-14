@@ -925,6 +925,7 @@ def plot_ROC(
         num_thresholds:int = 100,
         title:str = 'ROC Curve',
         class_curves:bool = False,
+        labels:List[str] = None,
         plt_show:bool = False,
         save_file_name:str = None) -> np.array:
     """
@@ -942,6 +943,8 @@ def plot_ROC(
         Title of the plot
     class_curves : bool, default = False
         Plot ROC curve for each class
+    labels : str, optional, default = None
+        Class labels -> automatic labeling C000, ..., CXXX if labels is None
     plt_show : bool, optional, default = False
         Set to True to show the plot
     save_file_name : str, optional, default = None
@@ -958,15 +961,17 @@ def plot_ROC(
         plt.title(title)
 
     FPRs, TPRs = ROC(Y, T, num_thresholds)
-    plt.plot(FPRs, TPRs, label = 'overall')
+    roc_auc = ROC_AUC(Y, T)
+    label_str = '$ROC\,AUC_ = ' + f'{roc_auc:0.4f}' + '$'
+    plt.plot(FPRs, TPRs, label = label_str)
     plt.fill_between(FPRs, TPRs, 0, alpha = 0.2)
 
     if class_curves:
         class_data = {}
+        for i in range(T.shape[1]):
+            class_data[i] = [], []
         for y, t in zip(Y, T):
             c = torch.argmax(t, dim = 0).item()
-            if c not in class_data:
-                class_data[c] = [], []
 
             class_data[c][0].append(y)
             class_data[c][1].append(t)
@@ -975,7 +980,13 @@ def plot_ROC(
             Y = torch.stack(Y, dim = 0)
             T = torch.stack(T, dim = 0)
             FPRs, TPRs = ROC(Y, T, num_thresholds)
-            plt.plot(FPRs, TPRs, label=f'Class {c}', linewidth = 0.8)
+            roc_auc_c = ROC_AUC(Y, T, num_thresholds)
+            if labels is None:
+                class_str = f'C{c:0>3}'
+            else:
+                class_str = labels[c]
+            label_str = '$ROC\,AUC_{' + class_str + '} = ' + f'{roc_auc_c:0.4f}' + '$'
+            plt.plot(FPRs, TPRs, label=label_str, linewidth = 0.8)
 
     plt.plot([0, 1], [0, 1], linestyle = ':', color='gray', alpha = 0.8)
 
@@ -991,8 +1002,8 @@ def plot_ROC(
 
     plt.legend()
 
-    roc_auc = ROC_AUC(Y, T)
-    plt.text(0.82, 1.02, f'ROC AUC = {roc_auc:0.4f}')
+    
+    #plt.text(0.82, 1.02, f'ROC AUC = {roc_auc:0.4f}')
 
     if plt_show:
         plt.show()
