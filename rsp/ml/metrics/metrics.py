@@ -83,7 +83,7 @@ def confusion_matrix(Y:torch.Tensor, T:torch.Tensor) -> torch.Tensor:
 #__example__ 
 #__example__ tp = m.TP(Y, T)
 #__example__ print(tp) -> 5
-def TP(Y:torch.Tensor, T:torch.Tensor) -> int:
+def TP(Y:torch.Tensor, T:torch.Tensor, threshold:float = 0.5) -> int:
     """
     True positives. Expected input shape: (batch_size, num_classes)
     
@@ -93,6 +93,8 @@ def TP(Y:torch.Tensor, T:torch.Tensor) -> int:
         Prediction
     T : torch.Tensor
         True values
+    threshold : float
+        All values that are greater than or equal to the threshold are considered a positive class.
 
     Returns
     -------
@@ -104,8 +106,8 @@ def TP(Y:torch.Tensor, T:torch.Tensor) -> int:
     assert torch.all(T >= 0) and torch.all(T <= 1), f'Expected 0 <= T <= 1'
     assert len(T.shape) == 2, f'Expected shape (batch_size, num_classes), but got shape of {T.shape}'
     
-    Y_pos = Y >= 0.5
-    T_pos = T >= 0.5
+    Y_pos = Y >= threshold
+    T_pos = T >= threshold
 
     mask = torch.bitwise_and(Y_pos, T_pos)
     tp = mask.sum().item()
@@ -133,7 +135,7 @@ def TP(Y:torch.Tensor, T:torch.Tensor) -> int:
 #__example__ 
 #__example__ tn = m.TN(Y, T)
 #__example__ print(tn) -> 11
-def TN(Y:torch.Tensor, T:torch.Tensor) -> int:
+def TN(Y:torch.Tensor, T:torch.Tensor, threshold:float = 0.5) -> int:
     """
     True negatives. Expected input shape: (batch_size, num_classes)
     
@@ -143,6 +145,8 @@ def TN(Y:torch.Tensor, T:torch.Tensor) -> int:
         Prediction
     T : torch.Tensor
         True values
+    threshold : float
+        All values that are greater than or equal to the threshold are considered a positive class.
 
     Returns
     -------
@@ -154,8 +158,8 @@ def TN(Y:torch.Tensor, T:torch.Tensor) -> int:
     assert torch.all(T >= 0) and torch.all(T <= 1), f'Expected 0 <= T <= 1'
     assert len(T.shape) == 2, f'Expected shape (batch_size, num_classes), but got shape of {T.shape}'
     
-    Y_neg = Y < 0.5
-    T_neg = T < 0.5
+    Y_neg = Y < threshold
+    T_neg = T < threshold
 
     mask = torch.bitwise_and(Y_neg, T_neg)
     tn = mask.sum().item()
@@ -183,7 +187,7 @@ def TN(Y:torch.Tensor, T:torch.Tensor) -> int:
 #__example__ 
 #__example__ fp = m.FP(Y, T)
 #__example__ print(fp) -> 1
-def FP(Y:torch.Tensor, T:torch.Tensor) -> int:
+def FP(Y:torch.Tensor, T:torch.Tensor, threshold:float = 0.5) -> int:
     """
     False positives. Expected input shape: (batch_size, num_classes)
     
@@ -193,6 +197,8 @@ def FP(Y:torch.Tensor, T:torch.Tensor) -> int:
         Prediction
     T : torch.Tensor
         True values
+    threshold : float
+        All values that are greater than or equal to the threshold are considered a positive class.
 
     Returns
     -------
@@ -233,7 +239,7 @@ def FP(Y:torch.Tensor, T:torch.Tensor) -> int:
 #__example__ 
 #__example__ fn = m.FN(Y, T)
 #__example__ print(fn) -> 1
-def FN(Y:torch.Tensor, T:torch.Tensor) -> int:
+def FN(Y:torch.Tensor, T:torch.Tensor, threshold:float = 0.5) -> int:
     """
     False negatives. Expected input shape: (batch_size, num_classes)
     
@@ -243,6 +249,8 @@ def FN(Y:torch.Tensor, T:torch.Tensor) -> int:
         Prediction
     T : torch.Tensor
         True values
+    threshold : float
+        All values that are greater than or equal to the threshold are considered a positive class.
 
     Returns
     -------
@@ -254,8 +262,8 @@ def FN(Y:torch.Tensor, T:torch.Tensor) -> int:
     assert torch.all(T >= 0) and torch.all(T <= 1), f'Expected 0 <= T <= 1'
     assert len(T.shape) == 2, f'Expected shape (batch_size, num_classes), but got shape of {T.shape}'
     
-    Y_neg = Y < 0.5
-    T_pos = T >= 0.5
+    Y_neg = Y < threshold
+    T_pos = T >= threshold
 
     mask = torch.bitwise_and(Y_neg, T_pos)
     fn = mask.sum().item()
@@ -283,7 +291,7 @@ def FN(Y:torch.Tensor, T:torch.Tensor) -> int:
 #__example__ 
 #__example__ fpr = m.FPR(Y, T)
 #__example__ print(fpr) -> 0.08333333333333333
-def FPR(Y:torch.Tensor, T:torch.Tensor) -> float:
+def FPR(Y:torch.Tensor, T:torch.Tensor, threshold:float = 0.5) -> float:
     """
     False positive rate. Expected input shape: (batch_size, num_classes)
     
@@ -293,6 +301,8 @@ def FPR(Y:torch.Tensor, T:torch.Tensor) -> float:
         Prediction
     T : torch.Tensor
         True values
+    threshold : float
+        All values that are greater than or equal to the threshold are considered a positive class.
 
     Returns
     -------
@@ -304,8 +314,8 @@ def FPR(Y:torch.Tensor, T:torch.Tensor) -> float:
     assert torch.all(T >= 0) and torch.all(T <= 1), f'Expected 0 <= T <= 1'
     assert len(T.shape) == 2, f'Expected shape (batch_size, num_classes), but got shape of {T.shape}'
 
-    fp = FP(Y, T)
-    tn = TN(Y, T)
+    fp = FP(Y, T, threshold)
+    tn = TN(Y, T, threshold)
     if fp + tn == 0:
         return np.nan
     fpr = fp / (fp + tn)
@@ -333,7 +343,7 @@ def FPR(Y:torch.Tensor, T:torch.Tensor) -> float:
 #__example__ 
 #__example__ tpr = m.TPR(Y, T)
 #__example__ print(tpr) -> 0.8333333333333334
-def TPR(Y:torch.Tensor, T:torch.Tensor) -> float:
+def TPR(Y:torch.Tensor, T:torch.Tensor, threshold:float = 0.5) -> float:
     """
     True positive rate. Expected input shape: (batch_size, num_classes)
     
@@ -343,6 +353,8 @@ def TPR(Y:torch.Tensor, T:torch.Tensor) -> float:
         Prediction
     T : torch.Tensor
         True values
+    threshold : float
+        All values that are greater than or equal to the threshold are considered a positive class.
 
     Returns
     -------
@@ -354,8 +366,8 @@ def TPR(Y:torch.Tensor, T:torch.Tensor) -> float:
     assert torch.all(T >= 0) and torch.all(T <= 1), f'Expected 0 <= T <= 1'
     assert len(T.shape) == 2, f'Expected shape (batch_size, num_classes), but got shape of {T.shape}'
 
-    tp = TP(Y, T)
-    fn = FN(Y, T)
+    tp = TP(Y, T, threshold)
+    fn = FN(Y, T, threshold)
     if tp + fn == 0:
         return np.nan
     tpr = tp / (tp + fn)
@@ -384,7 +396,7 @@ def TPR(Y:torch.Tensor, T:torch.Tensor) -> float:
 #__example__ precision = m.precision(Y, T)
 #__example__ print(precision) -> 0.8333333333333334
 #__equation__ $precision = \frac{TP}{TP + FP}$
-def precision(Y:torch.Tensor, T:torch.Tensor) -> float:
+def precision(Y:torch.Tensor, T:torch.Tensor, threshold:float = 0.5) -> float:
     """
     Precision. Expected input shape: (batch_size, num_classes)
 
@@ -394,6 +406,8 @@ def precision(Y:torch.Tensor, T:torch.Tensor) -> float:
         Prediction
     T : torch.Tensor
         True values
+    threshold : float
+        All values that are greater than or equal to the threshold are considered a positive class.
 
     Returns
     -------
@@ -405,8 +419,8 @@ def precision(Y:torch.Tensor, T:torch.Tensor) -> float:
     assert torch.all(T >= 0) and torch.all(T <= 1), f'Expected 0 <= T <= 1'
     assert len(T.shape) == 2, f'Expected shape (batch_size, num_classes), but got shape of {T.shape}'
 
-    tp = TP(Y, T)
-    fp = FP(Y, T)
+    tp = TP(Y, T, threshold)
+    fp = FP(Y, T, threshold)
     if tp + fp == 0:
         return np.nan
     prec = tp / (tp + fp)
@@ -435,7 +449,7 @@ def precision(Y:torch.Tensor, T:torch.Tensor) -> float:
 #__example__ recall = m.recall(Y, T)
 #__example__ print(recall) -> 0.8333333333333334
 #__equation__ $recall = \frac{TP}{TP + FN}$
-def recall(Y:torch.Tensor, T:torch.Tensor) -> float:
+def recall(Y:torch.Tensor, T:torch.Tensor, threshold:float = 0.5) -> float:
     """
     Recall. Expected input shape: (batch_size, num_classes)
 
@@ -445,6 +459,8 @@ def recall(Y:torch.Tensor, T:torch.Tensor) -> float:
         Prediction
     T : torch.Tensor
         True values
+    threshold : float
+        All values that are greater than or equal to the threshold are considered a positive class.
 
     Returns
     -------
@@ -456,8 +472,8 @@ def recall(Y:torch.Tensor, T:torch.Tensor) -> float:
     assert torch.all(T >= 0) and torch.all(T <= 1), f'Expected 0 <= T <= 1'
     assert len(T.shape) == 2, f'Expected shape (batch_size, num_classes), but got shape of {T.shape}'
 
-    tp = TP(Y, T)
-    fn = FN(Y, T)
+    tp = TP(Y, T, threshold)
+    fn = FN(Y, T, threshold)
     if tp + fn == 0:
         return np.nan
     rec = tp / (tp + fn)
@@ -485,7 +501,7 @@ def recall(Y:torch.Tensor, T:torch.Tensor) -> float:
 #__example__ ])
 #__example__ \nf1score = m.F1_Score(Y, T)
 #__example__ \nprint(f1score) --> 0.5
-def F1_Score(Y:torch.Tensor, T:torch.Tensor) -> float:
+def F1_Score(Y:torch.Tensor, T:torch.Tensor, threshold:float = 0.5) -> float:
     """
     F1 Score. Expected input shape: (batch_size, num_classes)
 
@@ -495,6 +511,8 @@ def F1_Score(Y:torch.Tensor, T:torch.Tensor) -> float:
         Prediction
     T : torch.Tensor
         True values
+    threshold : float
+        All values that are greater than or equal to the threshold are considered a positive class.
 
     Returns
     -------
@@ -508,9 +526,9 @@ def F1_Score(Y:torch.Tensor, T:torch.Tensor) -> float:
     assert torch.all(T >= 0) and torch.all(T <= 1), f'Expected 0 <= T <= 1'
     assert len(T.shape) == 2, f'Expected shape (batch_size, num_classes), but got shape of {T.shape}'
 
-    tp = TP(Y, T)
-    fp = FP(Y, T)
-    fn = FN(Y, T)
+    tp = TP(Y, T, threshold)
+    fp = FP(Y, T, threshold)
+    fn = FN(Y, T, threshold)
     if tp + fp + fn == 0:
         return np.nan
     f1score = 2 * tp / (2 * tp + fp + fn)
@@ -849,6 +867,198 @@ def plot_confusion_matrix(
 
     return img
 
+#__example__ import rsp.ml.metrics as m
+#__example__ import torch
+#__example__ import torch.nn.functional as F
+#__example__ 
+#__example__ num_elements = 100000
+#__example__ num_classes = 7
+#__example__ 
+#__example__ T = []
+#__example__ for i in range(num_elements):
+#__example__ \ttrue_class = torch.randint(0, num_classes, (1,))
+#__example__ \tt = F.one_hot(true_class, num_classes=num_classes)
+#__example__ \tT.append(t)
+#__example__ T = torch.cat(T)
+#__example__ 
+#__example__ dist = torch.normal(T.float(), 1.5)
+#__example__ Y = F.softmax(dist, dim = 1)
+#__example__ FPRs, TPRs = m.ROC(Y, T)
+def ROC(Y:torch.Tensor, T:torch.Tensor, num_thresholds:int = 100):
+    """
+    Calculates the receiver operating characteristic: computes False Positive Rates and True positive Rates for `num_thresholds` aligned between 0 and 1
+
+    Parameters
+    ----------
+    Y : torch.Tensor
+        Prediction
+    T : torch.Tensor
+        True values
+    num_thresholds : int, default = 100
+        Number of thresholds to compute.
+    
+    Returns
+    -------
+    (List[float], List[float])
+        (False Positive Rates, True Positive Rates) for 100 different thresholds
+    """
+    FPRs = []
+    TPRs = []
+    thresholds = np.linspace(0, 1 + 1 / num_thresholds, num_thresholds)**2
+    for threshold in thresholds:
+        fpr = FPR(Y, T, threshold)
+        tpr = TPR(Y, T, threshold)
+        FPRs.append(fpr)
+        TPRs.append(tpr)
+
+    FPRs = np.array(FPRs)
+    TPRs = np.array(TPRs)
+    indices = np.argsort(FPRs)
+    FPRs = FPRs[indices]
+    TPRs = TPRs[indices]
+    return FPRs, TPRs
+
+#__image__ ![](documentation/image/ROC_AUC.jpg)
+def plot_ROC(
+        Y:torch.Tensor,
+        T:torch.Tensor, 
+        num_thresholds:int = 100,
+        title:str = 'ROC Curve',
+        class_curves:bool = False,
+        plt_show:bool = False,
+        save_file_name:str = None) -> np.array:
+    """
+    Plot the receiver operating characteristic.
+    
+    Parameters
+    ----------
+    Y : torch.Tensor
+        Prediction
+    T : torch.Tensor
+        True values
+    num_thresholds : int, default = 100
+        Number of thresholds to compute.
+    title : str, optional, default = 'Confusion Matrix'
+        Title of the plot
+    class_curves : bool, default = False
+        Plot ROC curve for each class
+    plt_show : bool, optional, default = False
+        Set to True to show the plot
+    save_file_name : str, optional, default = None
+        If not None, the plot is saved under the specified save_file_name.
+
+    Returns
+    -------
+    np.array
+        Image of the confusion matrix
+    """
+    class_data = {}
+    for y, t in zip(Y, T):
+        c = torch.argmax(t, dim = 0).item()
+        if c not in class_data:
+            class_data[c] = [], []
+
+        class_data[c][0].append(y)
+        class_data[c][1].append(t)
+
+    fig = plt.figure(figsize = (10, 7))
+
+    if title is not None:
+        plt.title(title)
+
+    FPRs, TPRs = ROC(Y, T, num_thresholds)
+    plt.plot(FPRs, TPRs, label = 'overall')
+    plt.fill_between(FPRs, TPRs, 0, alpha = 0.2)
+
+    for c in class_data:
+        Y, T = class_data[c]
+        Y = torch.stack(Y, dim = 0)
+        T = torch.stack(T, dim = 0)
+        FPRs, TPRs = ROC(Y, T, num_thresholds)
+        plt.plot(FPRs, TPRs, label=f'Class {c}', linewidth = 0.8)
+
+    plt.plot([0, 1], [0, 1], linestyle = ':', color='gray', alpha = 0.8)
+
+    plt.xlim(0, 1)
+    plt.ylim(0, 1)
+
+    plt.minorticks_on()
+    plt.grid(which='minor', color='lightgray', linewidth=0.2)
+    plt.grid(which='major', linewidth=.6)
+
+    plt.xlabel('FPR')
+    plt.ylabel('TPR')
+
+    plt.legend()
+
+    roc_auc = ROC_AUC(Y, T)
+    plt.text(0.82, 1.02, f'ROC AUC = {roc_auc:0.4f}')
+
+    if plt_show:
+        plt.show()
+
+    fig.canvas.draw()
+
+    s, (width, height) = fig.canvas.print_to_buffer()
+
+    # Option 2a: Convert to a NumPy array.
+    img = np.fromstring(s, np.uint8).reshape((height, width, 4))
+    img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+    plt.close()
+
+    if save_file_name is not None:
+        cv.imwrite(save_file_name, img)
+
+    return img
+
+def ROC_AUC(Y:torch.Tensor, T:torch.Tensor, num_thresholds:int = 100):
+    """
+    Calculates the Receiver Operation Chracteristic Area under the Curve.
+    
+    Parameters
+    ----------
+    Y : torch.Tensor
+        Prediction
+    T : torch.Tensor
+        True values
+    num_thresholds : int, default = 100
+        Number of thresholds to compute.
+
+    Returns
+    -------
+    float
+        Receiver Operation Chracteristic Area under the Curve
+    """
+    FPRs, TPRs = ROC(Y, T, num_thresholds)
+
+    roc_auc = 0.
+
+    last_fpr = 0
+    last_tpr = 0
+    i = 0
+    while i < len(FPRs):
+        while FPRs[i] == last_fpr:
+            i += 1
+            if i == len(FPRs):
+                break
+        if i == len(FPRs):
+            break
+
+        if np.isnan(TPRs[i]):
+            last_fpr = FPRs[i]
+            continue
+
+        diff = TPRs[i] * (FPRs[i] - last_fpr)
+        roc_auc += diff
+        
+        
+        last_fpr = FPRs[i]
+        last_tpr = TPRs[i]
+        
+        i += 1
+
+    return roc_auc
+
 if __name__ == '__main__':
     Y = torch.tensor([
         [0.1, 0.1, 0.8],
@@ -886,6 +1096,7 @@ if __name__ == '__main__':
 
     f1 = F1_Score(Y, T)
 
+    # confusion matrix
     epsilon = 0.2
     num_elements = 10000
     num_classes = 7
@@ -912,5 +1123,25 @@ if __name__ == '__main__':
         a_str = 'A' + a_str
         labels.append(a_str)
 
-    img = plot_confusion_matrix(conf_m, labels=labels, plt_show=True)
+    img = plot_confusion_matrix(conf_m, labels=labels, plt_show=False)
     cv.imwrite('documentation/image/confusion_matrix.jpg', img)
+
+    # ROC AUC
+    num_elements = 100000
+    num_classes = 7
+
+    T = []
+    for i in range(num_elements):
+        true_class = torch.randint(0, num_classes, (1,))
+        t = F.one_hot(true_class, num_classes=num_classes)
+        T.append(t)
+    T = torch.cat(T)
+
+    dist = torch.normal(T.float(), 1.5)
+    Y = F.softmax(dist, dim = 1)
+    #Y = F.sigmoid(dist)
+
+    img = plot_ROC(Y, T, save_file_name='ROC_AUC.jpg', class_curves=True)
+    cv.imshow('ROC', img)
+    cv.waitKey()
+    pass

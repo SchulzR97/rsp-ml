@@ -23,8 +23,18 @@ def get_name(line:str):
         s_i = line.find('class')
         e_i = line.find('(')
 
+def get_README(modulename:str):
+    README_file = modulename.replace('.', '/') + '/README.md'
+    if not os.path.isfile(README_file):
+        return ''
+
+    with open(README_file, 'r') as f:
+        README = f.read()
+    return README
+
 def generate_file(base_module:str, number:str, modulename:str, filename:str):
     README = ''
+
     module = importlib.import_module(modulename)
     for name, sub_module in sorted(module.__dict__.items()):
         if name.startswith('__'):
@@ -46,10 +56,12 @@ def generate_file(base_module:str, number:str, modulename:str, filename:str):
             if hasattr(obj, '__name__') and obj.__name__.startswith('__'):
                 continue
             if inspect.isclass(obj):
-                README += generate_class(base_module, f'{number}.{nr}', obj)
+                sub_number = f'{nr}' if number is None else f'{number}.{nr}'
+                README += generate_class(base_module, sub_number, obj)
                 nr += 1
             elif inspect.ismethod(obj) or inspect.isfunction(obj):
-                README += generate_function(base_module, f'{number}.{nr}', obj)
+                sub_number = f'{nr}' if number is None else f'{number}.{nr}'
+                README += generate_function(base_module, sub_number, obj)
                 nr += 1
             else:
                 if constants == '':
@@ -73,13 +85,18 @@ def generate_file(base_module:str, number:str, modulename:str, filename:str):
                 constants += f'| {member_name} | {obj} | {const_desc} |\n'
                 
                 pass
-        
+
         if constants != '':
             README = f'{constants}\n\n' + README
             #README = '**Constants**\n\n' + README
             README = generate_headline(base_module, f'{number}.{nr}', f'{number}.{nr}.Constants') + README
             nr += 1
+
+        module_desc = get_README(modulename)
+        README = f'{module_desc}\n\n' + README
         README = generate_headline(base_module, number, sub_module.__name__) + README
+
+
 
         if inspect.isclass(sub_module):
             pass
@@ -283,7 +300,9 @@ def generate_headline(base_module:str, number:str, name, appendix = ''):
     level = len(parts) - 1
     for i in range(level):
         README += '#'
-    README += f' {number} {parts[-1]}{appendix}\n\n'
+    if number is not None:
+        README += f' {number}'
+    README += f' {parts[-1]}{appendix}\n\n'
     README += '[TOC](#table-of-contents)\n\n'
     return README
 
@@ -296,8 +315,8 @@ def generate_sub_module(base_module:str, number:str, module_name:str):
     nr = 1
 
     entries = sorted(os.listdir(module_dir))
-    if not '__init__.py' in entries:
-        return README
+    # if not '__init__.py' in entries:
+    #     return README
     
     for entry in entries:
         if entry.startswith('__'):
@@ -309,7 +328,8 @@ def generate_sub_module(base_module:str, number:str, module_name:str):
             nr += 1
         elif os.path.isdir(f'{module_dir}/{entry}'):
             sub_number = str(nr) if number is None else f'{number}.{nr}'
-            README += generate_sub_module(base_module, sub_number, f'{module_name}.{entry}')
+            sub_module_name = f'{module_name}.{entry}'
+            README += generate_sub_module(base_module, sub_number, sub_module_name)
             nr += 1
         pass
     
@@ -341,10 +361,11 @@ def generate_TOC(README):
 if __name__ == '__main__':
     OUT_FILE = 'README.md'
 
+    module_desc = get_README('rsp.ml')
     README = generate_sub_module('rsp.ml', None, 'rsp.ml')
 
     TOC = generate_TOC(README)
-    README = TOC + README
+    README = f'{module_desc}\n\n' + TOC + README
 
     with open(OUT_FILE, 'w') as f:
         f.write(README)

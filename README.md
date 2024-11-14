@@ -1,3 +1,7 @@
+# RSProduction MachineLearning
+
+This project provides some usefull machine learning functionality.
+
 # Table of Contents
 
 - [1 metrics](#1-metrics)
@@ -5,19 +9,22 @@
   - [1.2 FN](#12-fn)
   - [1.3 FP](#13-fp)
   - [1.4 FPR](#14-fpr)
-  - [1.5 TN](#15-tn)
-  - [1.6 TP](#16-tp)
-  - [1.7 TPR](#17-tpr)
-  - [1.8 confusion\_matrix](#18-confusion\_matrix)
-  - [1.9 plot\_confusion\_matrix](#19-plot\_confusion\_matrix)
-  - [1.10 precision](#110-precision)
-  - [1.11 recall](#111-recall)
-  - [1.12 top\_10\_accuracy](#112-top\_10\_accuracy)
-  - [1.13 top\_1\_accuracy](#113-top\_1\_accuracy)
-  - [1.14 top\_2\_accuracy](#114-top\_2\_accuracy)
-  - [1.15 top\_3\_accuracy](#115-top\_3\_accuracy)
-  - [1.16 top\_5\_accuracy](#116-top\_5\_accuracy)
-  - [1.17 top\_k\_accuracy](#117-top\_k\_accuracy)
+  - [1.5 ROC](#15-roc)
+  - [1.6 ROC\_AUC](#16-roc\_auc)
+  - [1.7 TN](#17-tn)
+  - [1.8 TP](#18-tp)
+  - [1.9 TPR](#19-tpr)
+  - [1.10 confusion\_matrix](#110-confusion\_matrix)
+  - [1.11 plot\_ROC](#111-plot\_roc)
+  - [1.12 plot\_confusion\_matrix](#112-plot\_confusion\_matrix)
+  - [1.13 precision](#113-precision)
+  - [1.14 recall](#114-recall)
+  - [1.15 top\_10\_accuracy](#115-top\_10\_accuracy)
+  - [1.16 top\_1\_accuracy](#116-top\_1\_accuracy)
+  - [1.17 top\_2\_accuracy](#117-top\_2\_accuracy)
+  - [1.18 top\_3\_accuracy](#118-top\_3\_accuracy)
+  - [1.19 top\_5\_accuracy](#119-top\_5\_accuracy)
+  - [1.20 top\_k\_accuracy](#120-top\_k\_accuracy)
 - [2 model](#2-model)
   - [2.2 Constants](#22-constants)
   - [2.1 load\_model](#21-load\_model)
@@ -110,6 +117,8 @@
 
 [TOC](#table-of-contents)
 
+The module `rsp.ml.metrics` provides some functionality to quantify the quality of predictions.
+
 ## 1.1 F1\_Score
 
 [TOC](#table-of-contents)
@@ -124,6 +133,7 @@ F1 Score. Expected input shape: (batch_size, num_classes)
 |------|------|-------------|
 | Y | torch.Tensor | Prediction |
 | T | torch.Tensor | True values |
+| threshold | float | All values that are greater than or equal to the threshold are considered a positive class. |
 
 **Returns**
 
@@ -180,6 +190,7 @@ False negatives. Expected input shape: (batch_size, num_classes)
 |------|------|-------------|
 | Y | torch.Tensor | Prediction |
 | T | torch.Tensor | True values |
+| threshold | float | All values that are greater than or equal to the threshold are considered a positive class. |
 
 **Returns**
 
@@ -226,6 +237,7 @@ False positives. Expected input shape: (batch_size, num_classes)
 |------|------|-------------|
 | Y | torch.Tensor | Prediction |
 | T | torch.Tensor | True values |
+| threshold | float | All values that are greater than or equal to the threshold are considered a positive class. |
 
 **Returns**
 
@@ -272,6 +284,7 @@ False positive rate. Expected input shape: (batch_size, num_classes)
 |------|------|-------------|
 | Y | torch.Tensor | Prediction |
 | T | torch.Tensor | True values |
+| threshold | float | All values that are greater than or equal to the threshold are considered a positive class. |
 
 **Returns**
 
@@ -304,7 +317,69 @@ fpr = m.FPR(Y, T)
 print(fpr) -> 0.08333333333333333
 ```
 
-## 1.5 TN
+## 1.5 ROC
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Calculates the receiver operating characteristic: computes False Positive Rates and True positive Rates for `num_thresholds` aligned between 0 and 1
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| Y | torch.Tensor | Prediction |
+| T | torch.Tensor | True values |
+| num_thresholds | int, default = 100 | Number of thresholds to compute. |
+
+**Returns**
+
+(False Positive Rates, True Positive Rates) for 100 different thresholds : (List[float], List[float])
+
+**Example**
+
+```python
+import rsp.ml.metrics as m
+import torch
+import torch.nn.functional as F
+
+num_elements = 100000
+num_classes = 7
+
+T = []
+for i in range(num_elements):
+  true_class = torch.randint(0, num_classes, (1,))
+  t = F.one_hot(true_class, num_classes=num_classes)
+  T.append(t)
+T = torch.cat(T)
+
+dist = torch.normal(T.float(), 1.5)
+Y = F.softmax(dist, dim = 1)
+FPRs, TPRs = m.ROC(Y, T)
+```
+
+## 1.6 ROC\_AUC
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Calculates the Receiver Operation Chracteristic Area under the Curve.
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| Y | torch.Tensor | Prediction |
+| T | torch.Tensor | True values |
+| num_thresholds | int, default = 100 | Number of thresholds to compute. |
+
+**Returns**
+
+Receiver Operation Chracteristic Area under the Curve : float
+
+## 1.7 TN
 
 [TOC](#table-of-contents)
 
@@ -318,6 +393,7 @@ True negatives. Expected input shape: (batch_size, num_classes)
 |------|------|-------------|
 | Y | torch.Tensor | Prediction |
 | T | torch.Tensor | True values |
+| threshold | float | All values that are greater than or equal to the threshold are considered a positive class. |
 
 **Returns**
 
@@ -350,7 +426,7 @@ tn = m.TN(Y, T)
 print(tn) -> 11
 ```
 
-## 1.6 TP
+## 1.8 TP
 
 [TOC](#table-of-contents)
 
@@ -364,6 +440,7 @@ True positives. Expected input shape: (batch_size, num_classes)
 |------|------|-------------|
 | Y | torch.Tensor | Prediction |
 | T | torch.Tensor | True values |
+| threshold | float | All values that are greater than or equal to the threshold are considered a positive class. |
 
 **Returns**
 
@@ -396,7 +473,7 @@ tp = m.TP(Y, T)
 print(tp) -> 5
 ```
 
-## 1.7 TPR
+## 1.9 TPR
 
 [TOC](#table-of-contents)
 
@@ -410,6 +487,7 @@ True positive rate. Expected input shape: (batch_size, num_classes)
 |------|------|-------------|
 | Y | torch.Tensor | Prediction |
 | T | torch.Tensor | True values |
+| threshold | float | All values that are greater than or equal to the threshold are considered a positive class. |
 
 **Returns**
 
@@ -442,7 +520,7 @@ tpr = m.TPR(Y, T)
 print(tpr) -> 0.8333333333333334
 ```
 
-## 1.8 confusion\_matrix
+## 1.10 confusion\_matrix
 
 [TOC](#table-of-contents)
 
@@ -492,7 +570,32 @@ print(conf_mat) -> tensor([
 ])
 ```
 
-## 1.9 plot\_confusion\_matrix
+## 1.11 plot\_ROC
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Plot the receiver operating characteristic.
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| Y | torch.Tensor | Prediction |
+| T | torch.Tensor | True values |
+| num_thresholds | int, default = 100 | Number of thresholds to compute. |
+| title | str, optional, default = 'Confusion Matrix' | Title of the plot |
+| class_curves | bool, default = False | Plot ROC curve for each class |
+| plt_show | bool, optional, default = False | Set to True to show the plot |
+| save_file_name | str, optional, default = None | If not None, the plot is saved under the specified save_file_name. |
+
+**Returns**
+
+Image of the confusion matrix : np.array
+
+![](documentation/image/ROC_AUC.jpg)
+## 1.12 plot\_confusion\_matrix
 
 [TOC](#table-of-contents)
 
@@ -518,7 +621,7 @@ Plot the confusion matrix
 Image of the confusion matrix : np.array
 
 ![](documentation/image/confusion_matrix.jpg)
-## 1.10 precision
+## 1.13 precision
 
 [TOC](#table-of-contents)
 
@@ -532,6 +635,7 @@ Precision. Expected input shape: (batch_size, num_classes)
 |------|------|-------------|
 | Y | torch.Tensor | Prediction |
 | T | torch.Tensor | True values |
+| threshold | float | All values that are greater than or equal to the threshold are considered a positive class. |
 
 **Returns**
 
@@ -570,7 +674,7 @@ precision = m.precision(Y, T)
 print(precision) -> 0.8333333333333334
 ```
 
-## 1.11 recall
+## 1.14 recall
 
 [TOC](#table-of-contents)
 
@@ -584,6 +688,7 @@ Recall. Expected input shape: (batch_size, num_classes)
 |------|------|-------------|
 | Y | torch.Tensor | Prediction |
 | T | torch.Tensor | True values |
+| threshold | float | All values that are greater than or equal to the threshold are considered a positive class. |
 
 **Returns**
 
@@ -622,7 +727,7 @@ recall = m.recall(Y, T)
 print(recall) -> 0.8333333333333334
 ```
 
-## 1.12 top\_10\_accuracy
+## 1.15 top\_10\_accuracy
 
 [TOC](#table-of-contents)
 
@@ -668,7 +773,7 @@ top_10_accuracy = m.top_10_accuracy(Y, T, k = 3)
 print(top_10_accuracy) --> 1.0
 ```
 
-## 1.13 top\_1\_accuracy
+## 1.16 top\_1\_accuracy
 
 [TOC](#table-of-contents)
 
@@ -714,7 +819,7 @@ top_1_accuracy = m.top_1_accuracy(Y, T, k = 3)
 print(top_1_accuracy) --> 0.8333333333333334
 ```
 
-## 1.14 top\_2\_accuracy
+## 1.17 top\_2\_accuracy
 
 [TOC](#table-of-contents)
 
@@ -760,7 +865,7 @@ top_2_accuracy = m.top_2_accuracy(Y, T, k = 3)
 print(top_2_accuracy) --> 1.0
 ```
 
-## 1.15 top\_3\_accuracy
+## 1.18 top\_3\_accuracy
 
 [TOC](#table-of-contents)
 
@@ -806,7 +911,7 @@ top_3_accuracy = m.top_3_accuracy(Y, T, k = 3)
 print(top_3_accuracy) --> 1.0
 ```
 
-## 1.16 top\_5\_accuracy
+## 1.19 top\_5\_accuracy
 
 [TOC](#table-of-contents)
 
@@ -852,7 +957,7 @@ top_5_accuracy = m.top_5_accuracy(Y, T, k = 3)
 print(top_5_accuracy) --> 1.0
 ```
 
-## 1.17 top\_k\_accuracy
+## 1.20 top\_k\_accuracy
 
 [TOC](#table-of-contents)
 
@@ -902,6 +1007,8 @@ print(top_k_accuracy) --> 1.0
 
 [TOC](#table-of-contents)
 
+The module `rsp.ml.model` provides some usefull functionality to store and load pytorch models.
+
 ## 2.2 Constants
 
 [TOC](#table-of-contents)
@@ -945,6 +1052,8 @@ model004 = model.load_model(model.TUC_ActionPrediction_model004)
 # 3 multi\_transforms
 
 [TOC](#table-of-contents)
+
+The module `rsp.ml.multi_transforms` is based on `torchvision.transforms`, which is made for single images. `rsp.ml.multi_transforms` extends this functionality by providing transformations for sequences of images, which could be usefull for video augmentation.
 
 ## 3.1 BGR2GRAY : MultiTransform
 
@@ -1673,6 +1782,8 @@ Initializes a new instance.
 # 4 run
 
 [TOC](#table-of-contents)
+
+The module `rsp.ml.run` provides some tools for storing, loading and visualizing data during training of models using PyTorch. 
 
 ## 4.1 Run : builtins.object
 

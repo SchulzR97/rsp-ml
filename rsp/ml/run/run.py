@@ -4,11 +4,16 @@ import numpy as np
 import json
 import matplotlib.pyplot as plt
 import torch
-import rsp.common.console as console
+import sys
 import pickle as pkl
 import copy
 from glob import glob
 from pathlib import Path
+
+try:
+    import rsp.common.console as console
+except Exception as e:
+    print(e)
 
 class Run():
     def __init__(self, id = None, moving_average_epochs = 1000):

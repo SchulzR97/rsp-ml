@@ -1,6 +1,6 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, find_namespace_packages
 
-VERSION = '0.0.52' 
+VERSION = '0.0.59' 
 DESCRIPTION = 'Machine Learning'
 with open('README.md') as f:
     LONG_DESCRIPTION = f.read()
@@ -22,6 +22,7 @@ setup(
         },
         license="MIT",
         packages=find_packages(),
+        #packages=find_namespace_packages(where='rsp'),
         install_requires=[
             'torch',
             'torchvision',
