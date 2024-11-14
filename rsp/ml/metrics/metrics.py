@@ -961,7 +961,7 @@ def plot_ROC(
         plt.title(title)
 
     FPRs, TPRs = ROC(Y, T, num_thresholds)
-    roc_auc = ROC_AUC(Y, T, num_thresholds)
+    roc_auc = AUROC(Y, T, num_thresholds)
     label_str = '$ROC\,AUC_ = ' + f'{roc_auc:0.4f}' + '$'
     plt.plot(FPRs, TPRs, label = label_str)
     plt.fill_between(FPRs, TPRs, 0, alpha = 0.2)
@@ -982,12 +982,12 @@ def plot_ROC(
             Y = torch.stack(Y, dim = 0)
             T = torch.stack(T, dim = 0)
             FPRs, TPRs = ROC(Y, T, num_thresholds)
-            roc_auc_c = ROC_AUC(Y, T, num_thresholds)
+            roc_auc_c = AUROC(Y, T, num_thresholds)
             if labels is None:
                 class_str = f'C{c:0>3}'
             else:
                 class_str = labels[c]
-            label_str = '$ROC\,AUC_{' + class_str + '} = ' + f'{roc_auc_c:0.4f}' + '$'
+            label_str = '$AUROC_{' + class_str + '} = ' + f'{roc_auc_c:0.4f}' + '$'
             plt.plot(FPRs, TPRs, label=label_str, linewidth = 0.8)
 
     plt.plot([0, 1], [0, 1], linestyle = ':', color='gray', alpha = 0.8)
@@ -1024,9 +1024,9 @@ def plot_ROC(
 
     return img
 
-def ROC_AUC(Y:torch.Tensor, T:torch.Tensor, num_thresholds:int = 100):
+def AUROC(Y:torch.Tensor, T:torch.Tensor, num_thresholds:int = 100):
     """
-    Calculates the Receiver Operation Chracteristic Area under the Curve.
+    Calculates the Area under the Receiver Operation Chracteristic Curve.
     
     Parameters
     ----------
@@ -1061,6 +1061,10 @@ def ROC_AUC(Y:torch.Tensor, T:torch.Tensor, num_thresholds:int = 100):
             continue
 
         diff = TPRs[i] * (FPRs[i] - last_fpr)
+        if np.isnan(diff):
+            i+= 1
+            continue
+
         roc_auc += diff
         
         
