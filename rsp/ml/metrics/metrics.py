@@ -960,13 +960,10 @@ def plot_ROC(
     if title is not None:
         plt.title(title)
 
-    FPRs, TPRs = ROC(Y, T, num_thresholds)
-    roc_auc = AUROC(Y, T, num_thresholds)
-    label_str = '$ROC\,AUC_ = ' + f'{roc_auc:0.4f}' + '$'
-    plt.plot(FPRs, TPRs, label = label_str)
-    plt.fill_between(FPRs, TPRs, 0, alpha = 0.2)
-
     if class_curves:
+        cmap = plt.get_cmap('Pastel1')
+        colors = cmap(np.linspace(0, 1, T.shape[1]))
+        
         class_data = {}
         for i in range(T.shape[1]):
             class_data[i] = [], []
@@ -976,19 +973,25 @@ def plot_ROC(
             class_data[c][0].append(y)
             class_data[c][1].append(t)
         for c in class_data:
-            Y, T = class_data[c]
-            if len(Y) == 0:
+            Y_c, T_c = class_data[c]
+            if len(Y_c) == 0:
                 continue
-            Y = torch.stack(Y, dim = 0)
-            T = torch.stack(T, dim = 0)
-            FPRs, TPRs = ROC(Y, T, num_thresholds)
-            roc_auc_c = AUROC(Y, T, num_thresholds)
+            Y_c = torch.stack(Y_c, dim = 0)
+            T_c = torch.stack(T_c, dim = 0)
+            FPRs, TPRs = ROC(Y_c, T_c, num_thresholds)
+            roc_auc_c = AUROC(Y_c, T_c, num_thresholds)
             if labels is None:
                 class_str = f'C{c:0>3}'
             else:
                 class_str = labels[c]
             label_str = '$AUROC_{' + class_str + '} = ' + f'{roc_auc_c:0.4f}' + '$'
-            plt.plot(FPRs, TPRs, label=label_str, linewidth = 0.8)
+            plt.plot(FPRs, TPRs, label=label_str, linewidth = 1, color = colors[c])
+
+    FPRs, TPRs = ROC(Y, T, num_thresholds)
+    roc_auc = AUROC(Y, T, num_thresholds)
+    label_str = '$ROC\,AUC_ = ' + f'{roc_auc:0.4f}' + '$'
+    plt.plot(FPRs, TPRs, label = label_str, linewidth=1.2)
+    plt.fill_between(FPRs, TPRs, 0, alpha = 0.2)
 
     plt.plot([0, 1], [0, 1], linestyle = ':', color='gray', alpha = 0.8)
 
