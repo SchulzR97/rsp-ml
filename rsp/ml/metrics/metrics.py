@@ -952,15 +952,6 @@ def plot_ROC(
     np.array
         Image of the confusion matrix
     """
-    class_data = {}
-    for y, t in zip(Y, T):
-        c = torch.argmax(t, dim = 0).item()
-        if c not in class_data:
-            class_data[c] = [], []
-
-        class_data[c][0].append(y)
-        class_data[c][1].append(t)
-
     fig = plt.figure(figsize = (10, 7))
 
     if title is not None:
@@ -970,12 +961,21 @@ def plot_ROC(
     plt.plot(FPRs, TPRs, label = 'overall')
     plt.fill_between(FPRs, TPRs, 0, alpha = 0.2)
 
-    for c in class_data:
-        Y, T = class_data[c]
-        Y = torch.stack(Y, dim = 0)
-        T = torch.stack(T, dim = 0)
-        FPRs, TPRs = ROC(Y, T, num_thresholds)
-        plt.plot(FPRs, TPRs, label=f'Class {c}', linewidth = 0.8)
+    if class_curves:
+        class_data = {}
+        for y, t in zip(Y, T):
+            c = torch.argmax(t, dim = 0).item()
+            if c not in class_data:
+                class_data[c] = [], []
+
+            class_data[c][0].append(y)
+            class_data[c][1].append(t)
+        for c in class_data:
+            Y, T = class_data[c]
+            Y = torch.stack(Y, dim = 0)
+            T = torch.stack(T, dim = 0)
+            FPRs, TPRs = ROC(Y, T, num_thresholds)
+            plt.plot(FPRs, TPRs, label=f'Class {c}', linewidth = 0.8)
 
     plt.plot([0, 1], [0, 1], linestyle = ':', color='gray', alpha = 0.8)
 
@@ -1034,7 +1034,6 @@ def ROC_AUC(Y:torch.Tensor, T:torch.Tensor, num_thresholds:int = 100):
     roc_auc = 0.
 
     last_fpr = 0
-    last_tpr = 0
     i = 0
     while i < len(FPRs):
         while FPRs[i] == last_fpr:
