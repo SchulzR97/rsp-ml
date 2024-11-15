@@ -294,6 +294,9 @@ class Rotate(MultiTransform):
             mat = cv.getRotationMatrix2D((w // 2, h // 2), self.__angle__, self.__scale__)
             img_after = cv.warpAffine(img_before, mat, (w, h))
 
+            if len(img_after.shape) == 2:   # grayscale image
+                img_after = np.expand_dims(img_after, 2)
+
             result = torch.tensor(img_after, dtype=img.dtype).permute(2, 0, 1)
 
             results.append(result)
@@ -805,12 +808,13 @@ if __name__ == '__main__':
         #BGR2GRAY(),
         #Brightness(0.5, 1.5),
         #GaussianNoise(0.0, 0.005),
-        RGB2BGR(),
-        Scale(0.5),
+        #RGB2BGR(),
+        #Scale(0.5),
         #BGR2RGB(),
         #Stack(),
         #RandomHorizontalFlip(),
-        #BGR2GRAY(),
+        BGR2GRAY(),
+        Rotate(10),
         ToCVImage(),
     ])
 
