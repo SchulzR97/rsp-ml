@@ -159,7 +159,7 @@ class Run():
         file_state_dict = self.directory.joinpath(fname)
         if file_state_dict.exists():
             with file_state_dict.open('rb') as f:
-                model.load_state_dict(torch.load(f))
+                model.load_state_dict(torch.load(f, weights_only = False))
         else:
             console.warn(f'File runs/{self.id}/{fname} not found.')
             return
