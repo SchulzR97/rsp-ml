@@ -92,6 +92,8 @@ class Normalize(MultiTransform):
         """
         super().__init__()
 
+        assert len(mean) == len(std), f'Expected mean and std to have the same dimension, but got len(mean) = {len(mean)} and len(std) = {len(std)}'
+
         self.normalize = torchvision.transforms.Normalize(mean, std, inplace)
         self.__toTensor__ = ToTensor()
         self.__toPILImage__ = ToPILImage()
@@ -100,7 +102,12 @@ class Normalize(MultiTransform):
         is_tensor = isinstance(inputs[0], torch.Tensor)
         if not is_tensor:
             inputs = self.__toTensor__(inputs)
-        inputs = torch.stack(inputs)
+            inputs = torch.stack(inputs)
+
+        input_channels = inputs.shape[1]
+        transform_channels = len(self.normalize.mean)
+
+        assert input_channels == transform_channels, f'Expected input channels == transform channels, but got input channels = {input_channels} and len(mean) = {len(self.normalize.mean)}'
 
         results = []
         for res in self.normalize(inputs):
@@ -496,18 +503,16 @@ class Brightness(MultiTransform):
         self.__toCVImage__ = ToCVImage()
 
     def __call__(self, inputs):
+        assert inputs[0].shape[2] >= 3, f'Expected input channels >= 3 but got input[0].shape = {input[0].shape}'
+
         self.__get_size__(inputs)
         self.__reset__()
         is_tensor = isinstance(inputs[0], torch.Tensor)
         if not is_tensor:
             inputs = self.__toTensor__(inputs)
 
-        is_color_image = inputs[0].shape[0] == 3
-
         results = []
         for input in self.__toCVImage__(inputs):
-            if not is_color_image:
-                input = cv.cvtColor(input, cv.COLOR_GRAY2BGR)
             hsv = cv.cvtColor(input, cv.COLOR_BGR2HSV)
             h, s, v = cv.split(hsv)
 
@@ -515,10 +520,8 @@ class Brightness(MultiTransform):
             v[v > 1] = 1
             v[v < 0] = 0
             hsv = cv.merge((h, s, v))
-            result = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
-
-            if not is_color_image:
-                result = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
+            result = np.copy(input)
+            result[:, :, 0:3] = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
 
             results.append(result)
         
@@ -547,18 +550,16 @@ class Satturation(MultiTransform):
         self.__toCVImage__ = ToCVImage()
 
     def __call__(self, inputs):
+        assert inputs[0].shape[2] >= 3, f'Expected input channels >= 3 but got input[0].shape = {input[0].shape}'
+
         self.__get_size__(inputs)
         self.__reset__()
         is_tensor = isinstance(inputs[0], torch.Tensor)
         if not is_tensor:
             inputs = self.__toTensor__(inputs)
 
-        is_color_image = inputs[0].shape[0] == 3
-
         results = []
         for input in self.__toCVImage__(inputs):
-            if not is_color_image:
-                input = cv.cvtColor(input, cv.COLOR_GRAY2BGR)
             hsv = cv.cvtColor(input, cv.COLOR_BGR2HSV)
             h, s, v = cv.split(hsv)
 
@@ -566,10 +567,8 @@ class Satturation(MultiTransform):
             s[s > 1] = 1
             s[s < 0] = 0
             hsv = cv.merge((h, s, v))
-            result = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
-
-            if not is_color_image:
-                result = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
+            result = np.copy(input)
+            result[:, :, 0:3] = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
 
             results.append(result)
 
@@ -600,31 +599,24 @@ class Color(MultiTransform):
         self.__toCVImage__ = ToCVImage()
 
     def __call__(self, inputs):
+        assert inputs[0].shape[2] >= 3, f'Expected input channels >= 3 but got input[0].shape = {input[0].shape}'
+        
         self.__get_size__(inputs)
         self.__reset__()
         is_tensor = isinstance(inputs[0], torch.Tensor)
         if not is_tensor:
             inputs = self.__toTensor__(inputs)
-
-        is_color_image = inputs[0].shape[0] == 3
-
+        
         results = []
         for input in self.__toCVImage__(inputs):
-            if not is_color_image:
-                input = cv.cvtColor(input, cv.COLOR_GRAY2BGR)
             hsv = cv.cvtColor(input, cv.COLOR_BGR2HSV)
             h, s, v = cv.split(hsv)
 
-            # h *= self.rel
-            # h[h > 360] = 360
-            # h[h < 0] = 0
             h += self.offset_h
             h[h > 360] = h[h > 360] - 360
             hsv = cv.merge((h, s, v))
-            result = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
-
-            if not is_color_image:
-                result = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
+            result = np.copy(input)
+            result[:, :, 0:3] = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
 
             results.append(result)
         
