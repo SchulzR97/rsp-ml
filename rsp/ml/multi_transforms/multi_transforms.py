@@ -395,7 +395,8 @@ class BGR2RGB(MultiTransform):
 
         results = []
         for input in inputs:
-            result = torch.flip(input, (0,))
+            result = input.clone()
+            result[0:3] = torch.flip(input[0:3], (0,))
             results.append(result)
 
         if not is_tensor:
