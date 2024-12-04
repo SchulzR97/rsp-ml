@@ -1,14 +1,16 @@
 import os
 from datetime import datetime
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader
 import numpy as np
 import json
 import matplotlib.pyplot as plt
-import torch
-import sys
 import pickle as pkl
 import copy
 from glob import glob
 from pathlib import Path
+from tqdm import tqdm
 
 try:
     import rsp.common.console as console
@@ -16,18 +18,31 @@ except Exception as e:
     print(e)
 
 class Run():
-    def __init__(self, id = None, moving_average_epochs = 1000):
+    def __init__(self, id = None, moving_average_epochs = 1, metrics = None, device:str = None):
         if id is None:
             self.id = datetime.now().strftime('%Y%m%d%H%M%S%f')
             self.data = {}
         else:
             self.id = id
+
+        self.metrics = metrics
+
+        if device is None:
+            if torch.cuda.is_available():
+                self.device = 'cuda'
+            elif torch.backends.mps.is_available():
+                self.device = 'mps'
+            else:
+                self.device = 'cpu'
+        else:
+            self.device = device
             
         self.moving_average_epochs = moving_average_epochs
         self.__init_run_dir__()
         self.__load__()
     
     def append(self, key:str, phase:str, value):
+        mavg_epochs = self.moving_average_epochs if self.moving_average_epochs > 0 else 1
         if not key in self.data:
             self.data[key] = {}
         if not phase in self.data[key]:
@@ -42,7 +57,7 @@ class Run():
                 value = 0.
 
         self.data[key][phase]['val'].append(value)
-        self.data[key][phase]['avg'].append(np.average(self.data[key][phase]['val'][-self.moving_average_epochs:]))
+        self.data[key][phase]['avg'].append(np.average(self.data[key][phase]['val'][-mavg_epochs:]))
 
     def plot(self):
         self.__init_run_dir__()
@@ -71,13 +86,129 @@ class Run():
             plt.close()
 
     def recalculate_moving_average(self):
+        mavg_epochs = self.moving_average_epochs if self.moving_average_epochs > 0 else 1
         for key in self.data:
             for phase in self.data[key]:
                 for i in range(len(self.data[key][phase]['val'])):
-                    s_i = 0 if i - self.moving_average_epochs < 0 else i - self.moving_average_epochs
+                    s_i = 0 if i + 1 - mavg_epochs < 0 else i + 1 - mavg_epochs
                     e_i = i + 1
+                    test = self.data[key][phase]['val'][s_i:e_i]
                     self.data[key][phase]['avg'][i] = np.average(self.data[key][phase]['val'][s_i:e_i])
                 self.data[key][phase]['avg'] = self.data[key][phase]['avg'][:len(self.data[key][phase]['val'])]
+
+    def train_epoch(
+            self,
+            dataloader:DataLoader,
+            model:torch.nn.Module,
+            optimizer:torch.optim.Optimizer,
+            criterion:torch.nn.Module,
+            num_batches:int = None,
+            return_YT:bool = False
+        ):
+        results = self.__compute__(
+            model = model,
+            optimizer = optimizer,
+            criterion = criterion,
+            dataloader = dataloader,
+            train = True,
+            num_batches = num_batches,
+            return_XYT = return_YT)
+        for key in results:
+            if key == 'X' or key == 'Y' or key == 'T':
+                continue
+            self.append(key, phase = 'train', value = results[key])
+
+        return results
+    
+    def validate_epoch(
+            self,
+            dataloader:DataLoader,
+            model:torch.nn.Module,
+            optimizer:torch.optim.Optimizer,
+            criterion:torch.nn.Module,
+            num_batches:int = None,
+            return_YT:bool = False
+        ):
+        results = self.__compute__(
+            model = model,
+            optimizer = optimizer,
+            criterion = criterion,
+            dataloader = dataloader,
+            train = False,
+            num_batches = num_batches,
+            return_XYT = return_YT)
+        for key in results:
+            if key == 'X' or key == 'Y' or key == 'T':
+                continue
+            self.append(key, phase = 'val', value = results[key])
+
+        return results
+
+    def __compute__(
+            self,
+            model:nn.Module,
+            optimizer:torch.optim.Optimizer,
+            criterion:nn.Module,
+            dataloader:DataLoader,
+            num_batches:int,
+            train:bool,
+            return_XYT:bool = False
+        ):
+        iterator = iter(dataloader)
+        if num_batches is None or num_batches > len(dataloader):
+            num_batches = len(dataloader)
+        
+        results = {
+            'loss': []
+        }
+        if return_XYT:
+            results['Y'] = []
+            results['X'] = []
+            results['T'] = []
+
+        progress = tqdm(range(num_batches), desc='train' if train else 'val', total=num_batches, leave=False)
+        for i in progress:
+            if i >= num_batches:
+                break
+
+            X, T = next(iterator)
+            X:torch.Tensor = X.to(self.device)
+            T:torch.Tensor = T.to(self.device)
+
+            if train:
+                optimizer.zero_grad()
+                model.train()
+                Y = model(X)
+            else:
+                model.eval()
+                with torch.no_grad():
+                    Y = model(X)
+            
+            loss:torch.Tensor = criterion(Y, T)
+
+            for metric in self.metrics:
+                val = metric(Y, T)
+                if metric.__name__ not in results:
+                    results[metric.__name__] = []
+                results[metric.__name__].append(val)
+            
+            if train:
+                loss.backward()
+                optimizer.step()
+
+            results['loss'].append(loss.item())
+            if return_XYT:
+                results['X'].append(X)
+                results['Y'].append(Y)
+                results['T'].append(T)
+        
+        for key in results:
+            if key == 'X' or key == 'Y' or key == 'T':
+                results[key] = torch.stack(results[key])
+            else:
+                results[key] = np.average(results[key])
+
+        return results
 
     def save(self):
         self.__init_run_dir__()
@@ -171,7 +302,10 @@ class Run():
         
         best_acc, best_file = self.__best_state_dict__(fname, id, suffix)
         self.load_state_dict(model, best_file)
-        console.success(f'Loaded {best_file}')
+        try:
+            console.success(f'Loaded {best_file}')
+        except:
+            print(f'Loaded {best_file}')
 
     def pickle_dump(self, model:torch.nn.Module, fname = 'model.pkl'):
         self.__init_run_dir__()

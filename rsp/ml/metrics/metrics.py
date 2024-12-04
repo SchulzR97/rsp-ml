@@ -621,7 +621,7 @@ def top_1_accuracy(Y:torch.Tensor, T:torch.Tensor) -> float:
     float
         Top 1 accuracy -> top k accuracy | k = 1
     """
-    assert Y.shape == T.shape, f'Expected Y and T to have the same shape.'
+    assert Y.shape == T.shape, f'Expected Y and T to have the same shape, but got Y.shape {Y.shape}, T.shape {T.shape}'
     assert torch.all(Y >= 0) and torch.all(Y <= 1), f'Expected 0 <= Y <= 1'
     assert torch.all(T >= 0) and torch.all(T <= 1), f'Expected 0 <= T <= 1'
     assert len(T.shape) == 2, f'Expected shape (batch_size, num_classes), but got shape of {T.shape}'
