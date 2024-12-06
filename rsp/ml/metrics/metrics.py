@@ -841,7 +841,7 @@ def plot_confusion_matrix(
                   columns = [i for i in labels])
     fig = plt.figure(figsize = (10,7))
 
-    sn.heatmap(df_cm, annot=True, cmap=cmap, fmt='g')
+    sn.heatmap(df_cm, annot=T.shape[1] <= 20, cmap=cmap, fmt='g')
     plt.xticks(rotation=45, ha="right")
     plt.yticks(rotation=0, ha="right")
     if title is not None:
