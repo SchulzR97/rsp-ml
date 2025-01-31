@@ -26,8 +26,10 @@ This project provides some usefull machine learning functionality.
   - [1.19 top\_5\_accuracy](#119-top\_5\_accuracy)
   - [1.20 top\_k\_accuracy](#120-top\_k\_accuracy)
 - [2 model](#2-model)
-  - [2.2 Constants](#22-constants)
-  - [2.1 load\_model](#21-load\_model)
+  - [2.1 MODELS : enum.Enum](#21-models--enumenum)
+  - [2.2 WEIGHTS : enum.Enum](#22-weights--enumenum)
+  - [2.3 list\_model\_weights](#23-list\_model\_weights)
+  - [2.4 load\_model](#24-load\_model)
 - [3 multi\_transforms](#3-multi\_transforms)
   - [3.1 BGR2GRAY : MultiTransform](#31-bgr2gray--multitransform)
     - [3.1.1 \_\_call\_\_](#311-\_\_call\_\_)
@@ -111,6 +113,8 @@ This project provides some usefull machine learning functionality.
     - [4.1.12 save](#4112-save)
     - [4.1.13 save\_best\_state\_dict](#4113-save\_best\_state\_dict)
     - [4.1.14 save\_state\_dict](#4114-save\_state\_dict)
+    - [4.1.15 train\_epoch](#4115-train\_epoch)
+    - [4.1.16 validate\_epoch](#4116-validate\_epoch)
 
 
 # 1 metrics
@@ -1010,33 +1014,129 @@ print(top_k_accuracy) --> 1.0
 
 The module `rsp.ml.model` provides some usefull functionality to store and load pytorch models.
 
-## 2.2 Constants
-
-[TOC](#table-of-contents)
-
-| Name | Value | Description |
-| -----|-------|------------ |
-| TUC_ActionPrediction_model004 | TUC/ActionPrediction/Model4 | **TUC Action prediction model 4**<br>CNN with Multihead-Self-Attention<br>**Input**<br>- batch size<br>- sequence length = 30<br>- channels = 3<br>- width = 200<br>- height = 200<br>**Output**<br>- batch size<br>- number of classes = 10 |
-| TUC_ActionPrediction_model005 | TUC/ActionPrediction/Model5 | **TUC Action prediction model 5**<br>CNN with Multihead-Self-Attention<br>**Input**<br>- batch size<br>- sequence length = 30<br>- channels = 3<br>- width = 300<br>- height = 300<br>**Output**<br>- batch size<br>- number of classes = 10 |
-| URL | https://drive.google.com/drive/folders/1ulNnPqg-5wvenRl2CuJMxMMcaiYfHjQ9?usp=share_link | Google Drive URL |
-
-
-## 2.1 load\_model
+## 2.1 MODELS : enum.Enum
 
 [TOC](#table-of-contents)
 
 **Description**
 
-Loads a model from an pretrained PyTorch external source into memory.
+Create a collection of name/value pairs.
 
-> See Constants for available models
+Example enumeration:
+
+>>> class Color(Enum):
+...     RED = 1
+...     BLUE = 2
+...     GREEN = 3
+
+Access them by:
+
+- attribute access::
+
+>>> Color.RED
+<Color.RED: 1>
+
+- value lookup:
+
+>>> Color(1)
+<Color.RED: 1>
+
+- name lookup:
+
+>>> Color['RED']
+<Color.RED: 1>
+
+Enumerations can be iterated over, and know how many members they have:
+
+>>> len(Color)
+3
+
+>>> list(Color)
+[<Color.RED: 1>, <Color.BLUE: 2>, <Color.GREEN: 3>]
+
+Methods can be added to enumerations, and members can have their own
+attributes -- see the documentation for details.
+
+
+## 2.2 WEIGHTS : enum.Enum
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Create a collection of name/value pairs.
+
+Example enumeration:
+
+>>> class Color(Enum):
+...     RED = 1
+...     BLUE = 2
+...     GREEN = 3
+
+Access them by:
+
+- attribute access::
+
+>>> Color.RED
+<Color.RED: 1>
+
+- value lookup:
+
+>>> Color(1)
+<Color.RED: 1>
+
+- name lookup:
+
+>>> Color['RED']
+<Color.RED: 1>
+
+Enumerations can be iterated over, and know how many members they have:
+
+>>> len(Color)
+3
+
+>>> list(Color)
+[<Color.RED: 1>, <Color.BLUE: 2>, <Color.GREEN: 3>]
+
+Methods can be added to enumerations, and members can have their own
+attributes -- see the documentation for details.
+
+
+## 2.3 list\_model\_weights
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Lists all available weight files.
+
+
+**Returns**
+
+List of (MODEL:str, WEIGHT:str) : List[Tuple(str, str)]
+
+**Example**
+
+```python
+import rsp.ml.model as model
+
+model_weight_files = model.list_model_weights()
+```
+
+## 2.4 load\_model
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Loads a pretrained PyTorch model from HuggingFace.
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| model_id | str | ID of the model |
-| force_reload | bool | Overwrite local file -> forces downlad. |
+| model | MODEL | ID of the model |
+| weights | WEIGHTS | ID of the weights |
 
 **Returns**
 
@@ -1047,7 +1147,7 @@ Pretrained PyTorch model : torch.nn.Module
 ```python
 import rsp.ml.model as model
 
-model004 = model.load_model(model.TUC_ActionPrediction_model004)
+action_recognition_model = model.load_model(MODEL.TUCARC3D, WEIGHTS.TUCAR)
 ```
 
 # 3 multi\_transforms
@@ -1848,6 +1948,14 @@ Initialize self.  See help(type(self)) for accurate signature.
 [TOC](#table-of-contents)
 
 ### 4.1.14 save\_state\_dict
+
+[TOC](#table-of-contents)
+
+### 4.1.15 train\_epoch
+
+[TOC](#table-of-contents)
+
+### 4.1.16 validate\_epoch
 
 [TOC](#table-of-contents)
 

@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages, find_namespace_packages
 
-VERSION = '0.0.72' 
+VERSION = '0.0.73' 
 DESCRIPTION = 'Machine Learning'
 with open('README.md') as f:
     LONG_DESCRIPTION = f.read()
@@ -27,14 +27,15 @@ setup(
             'torch',
             'torchvision',
             # 'torchaudio',
-            'rsp-common>=0.0.24',
+            'rsp-common>=0.0.29',
             'numpy',
             'opencv-python',
             # 'gym',
             # 'matplotlib',
             'pandas',
             'seaborn',
-            'googledriver'
+            'googledriver',
+            'huggingface-hub'
         ], # add any additional packages that 
         # needs to be installed along with your package. Eg: 'caer'
         url = "https://github.com/SchulzR97/rsp-ml",
