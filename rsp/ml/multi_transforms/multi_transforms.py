@@ -603,7 +603,7 @@ class Color(MultiTransform):
         is_tensor = isinstance(inputs[0], torch.Tensor)
         if is_tensor:
             assert inputs[0].shape[2] >= 3, f'Expected input channels >= 3 but got input[0].shape = {input[0].shape}'
-        elif isinstance(inputs[0], Image):
+        elif isinstance(inputs[0], Image.Image):
             assert inputs[0].mode in ['RGB', 'RGBA', 'CMYK'], f'Expected input channels >= 3 but got input[0].shape = {input[0].shape}'
         
         self.__get_size__(inputs)
