@@ -600,11 +600,15 @@ class Color(MultiTransform):
         self.__toCVImage__ = ToCVImage()
 
     def __call__(self, inputs):
-        assert inputs[0].shape[2] >= 3, f'Expected input channels >= 3 but got input[0].shape = {input[0].shape}'
+        is_tensor = isinstance(inputs[0], torch.Tensor)
+        if is_tensor:
+            assert inputs[0].shape[2] >= 3, f'Expected input channels >= 3 but got input[0].shape = {input[0].shape}'
+        else:
+            assert inputs[0].size[2] >= 3, f'Expected input channels >= 3 but got input[0].shape = {input[0].shape}'
         
         self.__get_size__(inputs)
         self.__reset__()
-        is_tensor = isinstance(inputs[0], torch.Tensor)
+        
         if not is_tensor:
             inputs = self.__toTensor__(inputs)
         

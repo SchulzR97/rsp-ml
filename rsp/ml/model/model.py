@@ -1,8 +1,9 @@
-import requests
 import torch
 import torch.jit
-from enum import Enum
 import huggingface_hub
+import os
+from enum import Enum
+from pathlib import Path
 
 class MODELS(Enum):
     TUCARC3D = 'TUC-AR-C3D'
@@ -40,6 +41,29 @@ def load_model(
 
     return model
 
+def publish_model(
+        model:torch.nn.Module,
+        model_id:str,
+        weights_id:str,
+        repos_dir:str = 'repos',
+        token:str = None
+    ):
+    if token is not None:
+        os.environ["HUGGINGFACEHUB_API_TOKEN"] = token
+        huggingface_hub.login(token)
+    repos_dir = Path(repos_dir)
+    model_dir = repos_dir.joinpath(model_id)
+    model_dir.mkdir(exist_ok=True, parents=True)
+    weights_path = model_dir.joinpath(weights_id)
+
+    repo = huggingface_hub.Repository(local_dir=model_dir, clone_from=f'SchulzR97/{model_id}')
+
+    scripted_model = torch.jit.script(model)
+    scripted_model.save(weights_path)
+
+    repo.push_to_hub()
+
+
 #__example__ #import rsp.ml.model as model
 #__example__
 #__example__ model_weight_files = model.list_model_weights()
@@ -66,6 +90,9 @@ def list_model_weights():
     return weight_files
 
 if __name__ == '__main__':
+    model = torch.nn.Linear(1, 2)
+    publish_model(model, MODELS.TUCARC3D.value, 'test.pth')
+
     list_model_weights()
 
     model = load_model(MODELS.TUCARC3D, WEIGHTS.TUCAR)
