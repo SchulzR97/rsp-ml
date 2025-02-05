@@ -155,8 +155,10 @@ class Run():
             return_XYT:bool = False
         ):
         iterator = iter(dataloader)
-        if num_batches is None or num_batches > len(dataloader):
+        if num_batches is None or hasattr(dataloader.dataset, 'len') and num_batches > len(dataloader):
             num_batches = len(dataloader)
+        if num_batches is None:
+            num_batches = 1e10
         
         results = {
             'loss': []
@@ -170,8 +172,11 @@ class Run():
         for i in progress:
             if i >= num_batches:
                 break
-
-            X, T = next(iterator)
+            
+            try:
+                X, T = next(iterator)
+            except:
+                break
             X:torch.Tensor = X.to(self.device)
             T:torch.Tensor = T.to(self.device)
 
