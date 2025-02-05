@@ -18,7 +18,7 @@ import rsp.ml.multi_transforms.multi_transforms as multi_transforms
 # __example__               streaming=True)
 class TUC_AR(IterableDataset):
     """
-    Small-scal action recognition dataset.
+    Small-scale action recognition dataset.
 
     Wrapper class for loading [SchulzR97/TUC-AR](https://huggingface.co/datasets/SchulzR97/TUC-AR) HuggingFace dataset as `torch.util.data.IterableDataset`.
 
@@ -107,7 +107,7 @@ class TUC_AR(IterableDataset):
                     X = torch.cat([images_rgb, images_d], dim=1)
                 else:
                     images_rgb = torch.stack(self.__toTensor__(images_rgb))
-                    X = torch.stack(images_rgb)
+                    X = images_rgb
 
                 if X.shape[0] > self.sequence_length:
                     start_idx = np.random.randint(0, X.shape[0]-self.sequence_length)
