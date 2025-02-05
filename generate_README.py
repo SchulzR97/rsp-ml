@@ -5,6 +5,8 @@ import pkgutil
 import importlib
 import re
 
+DEBUG = False
+
 class Section(Enum):
     NONE = None
     DESCRIPTION = '"""'
@@ -32,6 +34,20 @@ def get_README(modulename:str):
         README = f.read()
     return README
 
+def debug_README(README, fname = 'README_DEBUG.md'):
+    if DEBUG:
+        with open(fname, 'w') as f:
+            f.write(README)
+
+def parent_module(module_name):
+    parts = module_name.split('.')
+    pmodule = ''
+    for part in parts[:-1]:
+        if pmodule != '':
+            pmodule += '.'
+        pmodule += part
+    return pmodule
+
 def generate_file(base_module:str, number:str, modulename:str, filename:str):
     README = ''
 
@@ -51,6 +67,8 @@ def generate_file(base_module:str, number:str, modulename:str, filename:str):
                 continue
             if hasattr(obj, '__package__') and not obj.__package__.startswith(base_module):
                 continue
+            if hasattr(obj, '__module__') and parent_module(obj.__module__) != module.__package__:
+                continue
             if member_name.startswith('__'):
                 continue
             if hasattr(obj, '__name__') and obj.__name__.startswith('__'):
@@ -58,12 +76,14 @@ def generate_file(base_module:str, number:str, modulename:str, filename:str):
             if inspect.isclass(obj):
                 sub_number = f'{nr}' if number is None else f'{number}.{nr}'
                 README += generate_class(base_module, sub_number, obj)
+                debug_README(README)
                 nr += 1
             elif inspect.ismethod(obj) or inspect.isfunction(obj):
                 sub_number = f'{nr}' if number is None else f'{number}.{nr}'
                 README += generate_function(base_module, sub_number, obj)
+                debug_README(README)
                 nr += 1
-            else:
+            elif member_name.isupper():
                 if constants == '':
                     constants += '| Name | Value | Description |\n'
                     constants += '| -----|-------|------------ |\n'
@@ -83,19 +103,21 @@ def generate_file(base_module:str, number:str, modulename:str, filename:str):
                         const_desc = const_desc.replace('\n', '')
                         break
                 constants += f'| {member_name} | {obj} | {const_desc} |\n'
-                
+            else:                
                 pass
 
         if constants != '':
             README = f'{constants}\n\n' + README
             #README = '**Constants**\n\n' + README
             README = generate_headline(base_module, f'{number}.{nr}', f'{number}.{nr}.Constants') + README
+            debug_README(README)
             nr += 1
 
         module_desc = get_README(modulename)
         README = f'{module_desc}\n\n' + README
-        README = generate_headline(base_module, number, sub_module.__name__) + README
-
+        if module.__package__ == parent_module(sub_module.__name__):
+            README = generate_headline(base_module, number, sub_module.__name__) + README
+        debug_README(README)
 
 
         if inspect.isclass(sub_module):

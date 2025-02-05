@@ -4,126 +4,185 @@ This project provides some usefull machine learning functionality.
 
 # Table of Contents
 
-- [1 metrics](#1-metrics)
-  - [1.1 AUROC](#11-auroc)
-  - [1.2 F1\_Score](#12-f1\_score)
-  - [1.3 FN](#13-fn)
-  - [1.4 FP](#14-fp)
-  - [1.5 FPR](#15-fpr)
-  - [1.6 ROC](#16-roc)
-  - [1.7 TN](#17-tn)
-  - [1.8 TP](#18-tp)
-  - [1.9 TPR](#19-tpr)
-  - [1.10 confusion\_matrix](#110-confusion\_matrix)
-  - [1.11 plot\_ROC](#111-plot\_roc)
-  - [1.12 plot\_confusion\_matrix](#112-plot\_confusion\_matrix)
-  - [1.13 precision](#113-precision)
-  - [1.14 recall](#114-recall)
-  - [1.15 top\_10\_accuracy](#115-top\_10\_accuracy)
-  - [1.16 top\_1\_accuracy](#116-top\_1\_accuracy)
-  - [1.17 top\_2\_accuracy](#117-top\_2\_accuracy)
-  - [1.18 top\_3\_accuracy](#118-top\_3\_accuracy)
-  - [1.19 top\_5\_accuracy](#119-top\_5\_accuracy)
-  - [1.20 top\_k\_accuracy](#120-top\_k\_accuracy)
-- [2 model](#2-model)
-  - [2.1 MODELS : enum.Enum](#21-models--enumenum)
-  - [2.2 WEIGHTS : enum.Enum](#22-weights--enumenum)
-  - [2.3 list\_model\_weights](#23-list\_model\_weights)
-  - [2.4 load\_model](#24-load\_model)
-- [3 multi\_transforms](#3-multi\_transforms)
-  - [3.1 BGR2GRAY : MultiTransform](#31-bgr2gray--multitransform)
-    - [3.1.1 \_\_call\_\_](#311-\_\_call\_\_)
-    - [3.1.2 \_\_init\_\_](#312-\_\_init\_\_)
-  - [3.2 BGR2RGB : MultiTransform](#32-bgr2rgb--multitransform)
-    - [3.2.1 \_\_call\_\_](#321-\_\_call\_\_)
-    - [3.2.2 \_\_init\_\_](#322-\_\_init\_\_)
-  - [3.3 Brightness : MultiTransform](#33-brightness--multitransform)
-    - [3.3.1 \_\_call\_\_](#331-\_\_call\_\_)
-    - [3.3.2 \_\_init\_\_](#332-\_\_init\_\_)
-  - [3.4 CenterCrop : MultiTransform](#34-centercrop--multitransform)
-    - [3.4.1 \_\_call\_\_](#341-\_\_call\_\_)
-    - [3.4.2 \_\_init\_\_](#342-\_\_init\_\_)
-  - [3.5 Color : MultiTransform](#35-color--multitransform)
-    - [3.5.1 \_\_call\_\_](#351-\_\_call\_\_)
-    - [3.5.2 \_\_init\_\_](#352-\_\_init\_\_)
-  - [3.6 Compose : builtins.object](#36-compose--builtinsobject)
-    - [3.6.1 \_\_call\_\_](#361-\_\_call\_\_)
-    - [3.6.2 \_\_init\_\_](#362-\_\_init\_\_)
-  - [3.7 GaussianNoise : MultiTransform](#37-gaussiannoise--multitransform)
-    - [3.7.1 \_\_call\_\_](#371-\_\_call\_\_)
-    - [3.7.2 \_\_init\_\_](#372-\_\_init\_\_)
-  - [3.8 MultiTransform : builtins.object](#38-multitransform--builtinsobject)
-    - [3.8.1 \_\_call\_\_](#381-\_\_call\_\_)
-    - [3.8.2 \_\_init\_\_](#382-\_\_init\_\_)
-  - [3.9 Normalize : MultiTransform](#39-normalize--multitransform)
-    - [3.9.1 \_\_call\_\_](#391-\_\_call\_\_)
-    - [3.9.2 \_\_init\_\_](#392-\_\_init\_\_)
-  - [3.10 RGB2BGR : BGR2RGB](#310-rgb2bgr--bgr2rgb)
-    - [3.10.1 \_\_call\_\_](#3101-\_\_call\_\_)
-    - [3.10.2 \_\_init\_\_](#3102-\_\_init\_\_)
-  - [3.11 RandomCrop : MultiTransform](#311-randomcrop--multitransform)
-    - [3.11.1 \_\_call\_\_](#3111-\_\_call\_\_)
-    - [3.11.2 \_\_init\_\_](#3112-\_\_init\_\_)
-  - [3.12 RandomHorizontalFlip : MultiTransform](#312-randomhorizontalflip--multitransform)
-    - [3.12.1 \_\_call\_\_](#3121-\_\_call\_\_)
-    - [3.12.2 \_\_init\_\_](#3122-\_\_init\_\_)
-  - [3.13 RandomVerticalFlip : MultiTransform](#313-randomverticalflip--multitransform)
-    - [3.13.1 \_\_call\_\_](#3131-\_\_call\_\_)
-    - [3.13.2 \_\_init\_\_](#3132-\_\_init\_\_)
-  - [3.14 Resize : MultiTransform](#314-resize--multitransform)
-    - [3.14.1 \_\_call\_\_](#3141-\_\_call\_\_)
-    - [3.14.2 \_\_init\_\_](#3142-\_\_init\_\_)
-  - [3.15 Rotate : MultiTransform](#315-rotate--multitransform)
-    - [3.15.1 \_\_call\_\_](#3151-\_\_call\_\_)
-    - [3.15.2 \_\_init\_\_](#3152-\_\_init\_\_)
-  - [3.16 Satturation : MultiTransform](#316-satturation--multitransform)
-    - [3.16.1 \_\_call\_\_](#3161-\_\_call\_\_)
-    - [3.16.2 \_\_init\_\_](#3162-\_\_init\_\_)
-  - [3.17 Scale : MultiTransform](#317-scale--multitransform)
-    - [3.17.1 \_\_call\_\_](#3171-\_\_call\_\_)
-    - [3.17.2 \_\_init\_\_](#3172-\_\_init\_\_)
-  - [3.18 Stack : MultiTransform](#318-stack--multitransform)
-    - [3.18.1 \_\_call\_\_](#3181-\_\_call\_\_)
-    - [3.18.2 \_\_init\_\_](#3182-\_\_init\_\_)
-  - [3.19 ToCVImage : MultiTransform](#319-tocvimage--multitransform)
-    - [3.19.1 \_\_call\_\_](#3191-\_\_call\_\_)
-    - [3.19.2 \_\_init\_\_](#3192-\_\_init\_\_)
-  - [3.20 ToNumpy : MultiTransform](#320-tonumpy--multitransform)
-    - [3.20.1 \_\_call\_\_](#3201-\_\_call\_\_)
-    - [3.20.2 \_\_init\_\_](#3202-\_\_init\_\_)
-  - [3.21 ToPILImage : MultiTransform](#321-topilimage--multitransform)
-    - [3.21.1 \_\_call\_\_](#3211-\_\_call\_\_)
-    - [3.21.2 \_\_init\_\_](#3212-\_\_init\_\_)
-  - [3.22 ToTensor : MultiTransform](#322-totensor--multitransform)
-    - [3.22.1 \_\_call\_\_](#3221-\_\_call\_\_)
-    - [3.22.2 \_\_init\_\_](#3222-\_\_init\_\_)
-- [4 run](#4-run)
-  - [4.1 Run : builtins.object](#41-run--builtinsobject)
-    - [4.1.1 \_\_init\_\_](#411-\_\_init\_\_)
-    - [4.1.2 append](#412-append)
-    - [4.1.3 get\_avg](#413-get\_avg)
-    - [4.1.4 get\_val](#414-get\_val)
-    - [4.1.5 len](#415-len)
-    - [4.1.6 load\_best\_state\_dict](#416-load\_best\_state\_dict)
-    - [4.1.7 load\_state\_dict](#417-load\_state\_dict)
-    - [4.1.8 pickle\_dump](#418-pickle\_dump)
-    - [4.1.9 pickle\_load](#419-pickle\_load)
-    - [4.1.10 plot](#4110-plot)
-    - [4.1.11 recalculate\_moving\_average](#4111-recalculate\_moving\_average)
-    - [4.1.12 save](#4112-save)
-    - [4.1.13 save\_best\_state\_dict](#4113-save\_best\_state\_dict)
-    - [4.1.14 save\_state\_dict](#4114-save\_state\_dict)
-    - [4.1.15 train\_epoch](#4115-train\_epoch)
-    - [4.1.16 validate\_epoch](#4116-validate\_epoch)
+- [1 dataset](#1-dataset)
+  - [1.1 TUC\_AR : torch.utils.data.dataset.IterableDataset](#11-tuc\_ar--torchutilsdatadatasetiterabledataset)
+    - [1.1.1 \_\_init\_\_](#111-\_\_init\_\_)
+- [2 metrics](#2-metrics)
+  - [2.1 AUROC](#21-auroc)
+  - [2.2 F1\_Score](#22-f1\_score)
+  - [2.3 FN](#23-fn)
+  - [2.4 FP](#24-fp)
+  - [2.5 FPR](#25-fpr)
+  - [2.6 ROC](#26-roc)
+  - [2.7 TN](#27-tn)
+  - [2.8 TP](#28-tp)
+  - [2.9 TPR](#29-tpr)
+  - [2.10 confusion\_matrix](#210-confusion\_matrix)
+  - [2.11 plot\_ROC](#211-plot\_roc)
+  - [2.12 plot\_confusion\_matrix](#212-plot\_confusion\_matrix)
+  - [2.13 precision](#213-precision)
+  - [2.14 recall](#214-recall)
+  - [2.15 top\_10\_accuracy](#215-top\_10\_accuracy)
+  - [2.16 top\_1\_accuracy](#216-top\_1\_accuracy)
+  - [2.17 top\_2\_accuracy](#217-top\_2\_accuracy)
+  - [2.18 top\_3\_accuracy](#218-top\_3\_accuracy)
+  - [2.19 top\_5\_accuracy](#219-top\_5\_accuracy)
+  - [2.20 top\_k\_accuracy](#220-top\_k\_accuracy)
+- [3 model](#3-model)
+  - [3.1 MODELS : enum.Enum](#31-models--enumenum)
+  - [3.2 WEIGHTS : enum.Enum](#32-weights--enumenum)
+  - [3.3 list\_model\_weights](#33-list\_model\_weights)
+  - [3.4 load\_model](#34-load\_model)
+  - [3.5 publish\_model](#35-publish\_model)
+- [4 multi\_transforms](#4-multi\_transforms)
+  - [4.1 BGR2GRAY : MultiTransform](#41-bgr2gray--multitransform)
+    - [4.1.1 \_\_call\_\_](#411-\_\_call\_\_)
+    - [4.1.2 \_\_init\_\_](#412-\_\_init\_\_)
+  - [4.2 BGR2RGB : MultiTransform](#42-bgr2rgb--multitransform)
+    - [4.2.1 \_\_call\_\_](#421-\_\_call\_\_)
+    - [4.2.2 \_\_init\_\_](#422-\_\_init\_\_)
+  - [4.3 Brightness : MultiTransform](#43-brightness--multitransform)
+    - [4.3.1 \_\_call\_\_](#431-\_\_call\_\_)
+    - [4.3.2 \_\_init\_\_](#432-\_\_init\_\_)
+  - [4.4 CenterCrop : MultiTransform](#44-centercrop--multitransform)
+    - [4.4.1 \_\_call\_\_](#441-\_\_call\_\_)
+    - [4.4.2 \_\_init\_\_](#442-\_\_init\_\_)
+  - [4.5 Color : MultiTransform](#45-color--multitransform)
+    - [4.5.1 \_\_call\_\_](#451-\_\_call\_\_)
+    - [4.5.2 \_\_init\_\_](#452-\_\_init\_\_)
+  - [4.6 Compose : builtins.object](#46-compose--builtinsobject)
+    - [4.6.1 \_\_call\_\_](#461-\_\_call\_\_)
+    - [4.6.2 \_\_init\_\_](#462-\_\_init\_\_)
+  - [4.7 GaussianNoise : MultiTransform](#47-gaussiannoise--multitransform)
+    - [4.7.1 \_\_call\_\_](#471-\_\_call\_\_)
+    - [4.7.2 \_\_init\_\_](#472-\_\_init\_\_)
+  - [4.8 MultiTransform : builtins.object](#48-multitransform--builtinsobject)
+    - [4.8.1 \_\_call\_\_](#481-\_\_call\_\_)
+    - [4.8.2 \_\_init\_\_](#482-\_\_init\_\_)
+  - [4.9 Normalize : MultiTransform](#49-normalize--multitransform)
+    - [4.9.1 \_\_call\_\_](#491-\_\_call\_\_)
+    - [4.9.2 \_\_init\_\_](#492-\_\_init\_\_)
+  - [4.10 RGB2BGR : BGR2RGB](#410-rgb2bgr--bgr2rgb)
+    - [4.10.1 \_\_call\_\_](#4101-\_\_call\_\_)
+    - [4.10.2 \_\_init\_\_](#4102-\_\_init\_\_)
+  - [4.11 RandomCrop : MultiTransform](#411-randomcrop--multitransform)
+    - [4.11.1 \_\_call\_\_](#4111-\_\_call\_\_)
+    - [4.11.2 \_\_init\_\_](#4112-\_\_init\_\_)
+  - [4.12 RandomHorizontalFlip : MultiTransform](#412-randomhorizontalflip--multitransform)
+    - [4.12.1 \_\_call\_\_](#4121-\_\_call\_\_)
+    - [4.12.2 \_\_init\_\_](#4122-\_\_init\_\_)
+  - [4.13 RandomVerticalFlip : MultiTransform](#413-randomverticalflip--multitransform)
+    - [4.13.1 \_\_call\_\_](#4131-\_\_call\_\_)
+    - [4.13.2 \_\_init\_\_](#4132-\_\_init\_\_)
+  - [4.14 Resize : MultiTransform](#414-resize--multitransform)
+    - [4.14.1 \_\_call\_\_](#4141-\_\_call\_\_)
+    - [4.14.2 \_\_init\_\_](#4142-\_\_init\_\_)
+  - [4.15 Rotate : MultiTransform](#415-rotate--multitransform)
+    - [4.15.1 \_\_call\_\_](#4151-\_\_call\_\_)
+    - [4.15.2 \_\_init\_\_](#4152-\_\_init\_\_)
+  - [4.16 Satturation : MultiTransform](#416-satturation--multitransform)
+    - [4.16.1 \_\_call\_\_](#4161-\_\_call\_\_)
+    - [4.16.2 \_\_init\_\_](#4162-\_\_init\_\_)
+  - [4.17 Scale : MultiTransform](#417-scale--multitransform)
+    - [4.17.1 \_\_call\_\_](#4171-\_\_call\_\_)
+    - [4.17.2 \_\_init\_\_](#4172-\_\_init\_\_)
+  - [4.18 Stack : MultiTransform](#418-stack--multitransform)
+    - [4.18.1 \_\_call\_\_](#4181-\_\_call\_\_)
+    - [4.18.2 \_\_init\_\_](#4182-\_\_init\_\_)
+  - [4.19 ToCVImage : MultiTransform](#419-tocvimage--multitransform)
+    - [4.19.1 \_\_call\_\_](#4191-\_\_call\_\_)
+    - [4.19.2 \_\_init\_\_](#4192-\_\_init\_\_)
+  - [4.20 ToNumpy : MultiTransform](#420-tonumpy--multitransform)
+    - [4.20.1 \_\_call\_\_](#4201-\_\_call\_\_)
+    - [4.20.2 \_\_init\_\_](#4202-\_\_init\_\_)
+  - [4.21 ToPILImage : MultiTransform](#421-topilimage--multitransform)
+    - [4.21.1 \_\_call\_\_](#4211-\_\_call\_\_)
+    - [4.21.2 \_\_init\_\_](#4212-\_\_init\_\_)
+  - [4.22 ToTensor : MultiTransform](#422-totensor--multitransform)
+    - [4.22.1 \_\_call\_\_](#4221-\_\_call\_\_)
+    - [4.22.2 \_\_init\_\_](#4222-\_\_init\_\_)
+- [5 run](#5-run)
+  - [5.1 Run : builtins.object](#51-run--builtinsobject)
+    - [5.1.1 \_\_init\_\_](#511-\_\_init\_\_)
+    - [5.1.2 append](#512-append)
+    - [5.1.3 get\_avg](#513-get\_avg)
+    - [5.1.4 get\_val](#514-get\_val)
+    - [5.1.5 len](#515-len)
+    - [5.1.6 load\_best\_state\_dict](#516-load\_best\_state\_dict)
+    - [5.1.7 load\_state\_dict](#517-load\_state\_dict)
+    - [5.1.8 pickle\_dump](#518-pickle\_dump)
+    - [5.1.9 pickle\_load](#519-pickle\_load)
+    - [5.1.10 plot](#5110-plot)
+    - [5.1.11 recalculate\_moving\_average](#5111-recalculate\_moving\_average)
+    - [5.1.12 save](#5112-save)
+    - [5.1.13 save\_best\_state\_dict](#5113-save\_best\_state\_dict)
+    - [5.1.14 save\_state\_dict](#5114-save\_state\_dict)
+    - [5.1.15 train\_epoch](#5115-train\_epoch)
+    - [5.1.16 validate\_epoch](#5116-validate\_epoch)
 
 
-# 1 metrics
+
+
+# 1 dataset
+
+[TOC](#table-of-contents)
+
+
+
+## 1.1 TUC\_AR : torch.utils.data.dataset.IterableDataset
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Wrapper class for loading [SchulzR97/TUC-AR](https://huggingface.co/datasets/SchulzR97/TUC-AR) HuggingFace dataset as `torch.util.data.IterableDataset`.
+
+TUC-AR is a small scale action recognition dataset, containing 6(+1) action categories for human machine interaction. 
+
+**Facts**
+- RGB and depth input recorded by Intel RealSense D435 depth camera
+- 8 subjects
+- 11,031 sequences (train 8,893/ val 2,138)
+- 3 perspectives per scene
+- 6(+1) action classes<br>
+
+**Action Classes**
+| Action | Label    |
+|--------|----------|
+| A000   | None     |
+| A001   | Waving   |
+| A002   | Pointing |
+| A003   | Clapping |
+| A004   | Follow   |
+| A005   | Walking  |
+| A006   | Stop     |
+
+
+### 1.1.1 \_\_init\_\_
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Initializes a new instance.
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| split | str | Dataset split [train|val] |
+| depth_channel | bool | Load depth channel. If set to `True`, the generated input tensor will have 4 channels instead of 3. (batch_size, sequence_length, __channels__, width, height) |
+| num_actions | int, default = 7 | Number of action classes -> shape[1] of target tensor (batch_size, **num_actions**) |
+| streaming | bool, default = False | If set to `True`, don't download the data files. Instead, it streams the data progressively while iterating on the dataset. |
+| sequence_length | int, default = 30 | Length of each sequence. -> shape[1] of the generated input tensor. (batch_size, **sequence_length**, channels, width, height) |
+| transforms | rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([]) | Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details. |
+# 2 metrics
 
 [TOC](#table-of-contents)
 
 The module `rsp.ml.metrics` provides some functionality to quantify the quality of predictions.
 
-## 1.1 AUROC
+## 2.1 AUROC
 
 [TOC](#table-of-contents)
 
@@ -143,7 +202,7 @@ Calculates the Area under the Receiver Operation Chracteristic Curve.
 
 Receiver Operation Chracteristic Area under the Curve : float
 
-## 1.2 F1\_Score
+## 2.2 F1\_Score
 
 [TOC](#table-of-contents)
 
@@ -200,7 +259,7 @@ f1score = m.F1_Score(Y, T)
 print(f1score) --> 0.5
 ```
 
-## 1.3 FN
+## 2.3 FN
 
 [TOC](#table-of-contents)
 
@@ -247,7 +306,7 @@ fn = m.FN(Y, T)
 print(fn) -> 1
 ```
 
-## 1.4 FP
+## 2.4 FP
 
 [TOC](#table-of-contents)
 
@@ -294,7 +353,7 @@ fp = m.FP(Y, T)
 print(fp) -> 1
 ```
 
-## 1.5 FPR
+## 2.5 FPR
 
 [TOC](#table-of-contents)
 
@@ -341,7 +400,7 @@ fpr = m.FPR(Y, T)
 print(fpr) -> 0.08333333333333333
 ```
 
-## 1.6 ROC
+## 2.6 ROC
 
 [TOC](#table-of-contents)
 
@@ -383,7 +442,7 @@ Y = F.softmax(dist, dim = 1)
 FPRs, TPRs = m.ROC(Y, T)
 ```
 
-## 1.7 TN
+## 2.7 TN
 
 [TOC](#table-of-contents)
 
@@ -430,7 +489,7 @@ tn = m.TN(Y, T)
 print(tn) -> 11
 ```
 
-## 1.8 TP
+## 2.8 TP
 
 [TOC](#table-of-contents)
 
@@ -477,7 +536,7 @@ tp = m.TP(Y, T)
 print(tp) -> 5
 ```
 
-## 1.9 TPR
+## 2.9 TPR
 
 [TOC](#table-of-contents)
 
@@ -524,7 +583,7 @@ tpr = m.TPR(Y, T)
 print(tpr) -> 0.8333333333333334
 ```
 
-## 1.10 confusion\_matrix
+## 2.10 confusion\_matrix
 
 [TOC](#table-of-contents)
 
@@ -574,7 +633,7 @@ print(conf_mat) -> tensor([
 ])
 ```
 
-## 1.11 plot\_ROC
+## 2.11 plot\_ROC
 
 [TOC](#table-of-contents)
 
@@ -600,7 +659,7 @@ Plot the receiver operating characteristic.
 Image of the confusion matrix : np.array
 
 ![](documentation/image/ROC_AUC.jpg)
-## 1.12 plot\_confusion\_matrix
+## 2.12 plot\_confusion\_matrix
 
 [TOC](#table-of-contents)
 
@@ -626,7 +685,7 @@ Plot the confusion matrix
 Image of the confusion matrix : np.array
 
 ![](documentation/image/confusion_matrix.jpg)
-## 1.13 precision
+## 2.13 precision
 
 [TOC](#table-of-contents)
 
@@ -679,7 +738,7 @@ precision = m.precision(Y, T)
 print(precision) -> 0.8333333333333334
 ```
 
-## 1.14 recall
+## 2.14 recall
 
 [TOC](#table-of-contents)
 
@@ -732,7 +791,7 @@ recall = m.recall(Y, T)
 print(recall) -> 0.8333333333333334
 ```
 
-## 1.15 top\_10\_accuracy
+## 2.15 top\_10\_accuracy
 
 [TOC](#table-of-contents)
 
@@ -778,7 +837,7 @@ top_10_accuracy = m.top_10_accuracy(Y, T, k = 3)
 print(top_10_accuracy) --> 1.0
 ```
 
-## 1.16 top\_1\_accuracy
+## 2.16 top\_1\_accuracy
 
 [TOC](#table-of-contents)
 
@@ -824,7 +883,7 @@ top_1_accuracy = m.top_1_accuracy(Y, T, k = 3)
 print(top_1_accuracy) --> 0.8333333333333334
 ```
 
-## 1.17 top\_2\_accuracy
+## 2.17 top\_2\_accuracy
 
 [TOC](#table-of-contents)
 
@@ -870,7 +929,7 @@ top_2_accuracy = m.top_2_accuracy(Y, T, k = 3)
 print(top_2_accuracy) --> 1.0
 ```
 
-## 1.18 top\_3\_accuracy
+## 2.18 top\_3\_accuracy
 
 [TOC](#table-of-contents)
 
@@ -916,7 +975,7 @@ top_3_accuracy = m.top_3_accuracy(Y, T, k = 3)
 print(top_3_accuracy) --> 1.0
 ```
 
-## 1.19 top\_5\_accuracy
+## 2.19 top\_5\_accuracy
 
 [TOC](#table-of-contents)
 
@@ -962,7 +1021,7 @@ top_5_accuracy = m.top_5_accuracy(Y, T, k = 3)
 print(top_5_accuracy) --> 1.0
 ```
 
-## 1.20 top\_k\_accuracy
+## 2.20 top\_k\_accuracy
 
 [TOC](#table-of-contents)
 
@@ -1008,13 +1067,13 @@ top_k_accuracy = m.top_k_accuracy(Y, T, k = 3)
 print(top_k_accuracy) --> 1.0
 ```
 
-# 2 model
+# 3 model
 
 [TOC](#table-of-contents)
 
 The module `rsp.ml.model` provides some usefull functionality to store and load pytorch models.
 
-## 2.1 MODELS : enum.Enum
+## 3.1 MODELS : enum.Enum
 
 [TOC](#table-of-contents)
 
@@ -1058,7 +1117,7 @@ Methods can be added to enumerations, and members can have their own
 attributes -- see the documentation for details.
 
 
-## 2.2 WEIGHTS : enum.Enum
+## 3.2 WEIGHTS : enum.Enum
 
 [TOC](#table-of-contents)
 
@@ -1102,7 +1161,7 @@ Methods can be added to enumerations, and members can have their own
 attributes -- see the documentation for details.
 
 
-## 2.3 list\_model\_weights
+## 3.3 list\_model\_weights
 
 [TOC](#table-of-contents)
 
@@ -1123,7 +1182,7 @@ import rsp.ml.model as model
 model_weight_files = model.list_model_weights()
 ```
 
-## 2.4 load\_model
+## 3.4 load\_model
 
 [TOC](#table-of-contents)
 
@@ -1135,7 +1194,7 @@ Loads a pretrained PyTorch model from HuggingFace.
 
 | Name | Type | Description |
 |------|------|-------------|
-| model | MODEL | ID of the model |
+| model | MODELS | ID of the model |
 | weights | WEIGHTS | ID of the weights |
 
 **Returns**
@@ -1150,13 +1209,17 @@ import rsp.ml.model as model
 action_recognition_model = model.load_model(MODEL.TUCARC3D, WEIGHTS.TUCAR)
 ```
 
-# 3 multi\_transforms
+## 3.5 publish\_model
+
+[TOC](#table-of-contents)
+
+# 4 multi\_transforms
 
 [TOC](#table-of-contents)
 
 The module `rsp.ml.multi_transforms` is based on `torchvision.transforms`, which is made for single images. `rsp.ml.multi_transforms` extends this functionality by providing transformations for sequences of images, which could be usefull for video augmentation.
 
-## 3.1 BGR2GRAY : MultiTransform
+## 4.1 BGR2GRAY : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -1165,7 +1228,7 @@ The module `rsp.ml.multi_transforms` is based on `torchvision.transforms`, which
 Converts a sequence of BGR images to grayscale images.
 
 
-### 3.1.1 \_\_call\_\_
+### 4.1.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1178,7 +1241,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.1.2 \_\_init\_\_
+### 4.1.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1186,7 +1249,7 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 3.2 BGR2RGB : MultiTransform
+## 4.2 BGR2RGB : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -1195,7 +1258,7 @@ Initializes a new instance.
 Converts sequence of BGR images to RGB images.
 
 
-### 3.2.1 \_\_call\_\_
+### 4.2.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1208,7 +1271,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.2.2 \_\_init\_\_
+### 4.2.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1216,7 +1279,7 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 3.3 Brightness : MultiTransform
+## 4.3 Brightness : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -1227,7 +1290,7 @@ MultiTransform is an extension to keep the same transformation over a sequence o
 > **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
 
 
-### 3.3.1 \_\_call\_\_
+### 4.3.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1240,7 +1303,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.3.2 \_\_init\_\_
+### 4.3.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1248,7 +1311,7 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 3.4 CenterCrop : MultiTransform
+## 4.4 CenterCrop : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -1259,7 +1322,7 @@ Crops Images at the center after upscaling them. Dimensions kept the same.
 ![](documentation/image/multi_transforms.CenterCrop.png)
 
 
-### 3.4.1 \_\_call\_\_
+### 4.4.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1272,7 +1335,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.4.2 \_\_init\_\_
+### 4.4.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1285,7 +1348,7 @@ Initializes a new instance.
 | Name | Type | Description |
 |------|------|-------------|
 | max_scale | float | Images are scaled randomly between 1. and max_scale before cropping to original size. |
-## 3.5 Color : MultiTransform
+## 4.5 Color : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -1296,7 +1359,7 @@ MultiTransform is an extension to keep the same transformation over a sequence o
 > **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
 
 
-### 3.5.1 \_\_call\_\_
+### 4.5.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1309,7 +1372,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.5.2 \_\_init\_\_
+### 4.5.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1317,7 +1380,7 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 3.6 Compose : builtins.object
+## 4.6 Compose : builtins.object
 
 [TOC](#table-of-contents)
 
@@ -1335,7 +1398,7 @@ transforms = t.Compose([
   t.Scale(0.5)
 ])
 ```
-### 3.6.1 \_\_call\_\_
+### 4.6.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1343,7 +1406,7 @@ transforms = t.Compose([
 
 Call self as a function.
 
-### 3.6.2 \_\_init\_\_
+### 4.6.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1356,7 +1419,7 @@ Initializes a new instance.
 | Name | Type | Description |
 |------|------|-------------|
 | children | List[MultiTransform] | List of MultiTransforms to compose. |
-## 3.7 GaussianNoise : MultiTransform
+## 4.7 GaussianNoise : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -1367,7 +1430,7 @@ MultiTransform is an extension to keep the same transformation over a sequence o
 > **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
 
 
-### 3.7.1 \_\_call\_\_
+### 4.7.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1380,7 +1443,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.7.2 \_\_init\_\_
+### 4.7.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1388,7 +1451,7 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 3.8 MultiTransform : builtins.object
+## 4.8 MultiTransform : builtins.object
 
 [TOC](#table-of-contents)
 
@@ -1399,7 +1462,7 @@ MultiTransform is an extension to keep the same transformation over a sequence o
 > **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
 
 
-### 3.8.1 \_\_call\_\_
+### 4.8.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1412,7 +1475,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.8.2 \_\_init\_\_
+### 4.8.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1420,7 +1483,7 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 3.9 Normalize : MultiTransform
+## 4.9 Normalize : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -1431,7 +1494,7 @@ Normalize images with mean and standard deviation. Given mean: (mean[1],...,mean
 > Based on torchvision.transforms.Normalize
 
 
-### 3.9.1 \_\_call\_\_
+### 4.9.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1444,7 +1507,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.9.2 \_\_init\_\_
+### 4.9.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1459,7 +1522,7 @@ Initializes a new instance.
 | mean | List[float] | Sequence of means for each channel. |
 | std | List[float] | Sequence of standard deviations for each channel. |
 | inplace | bool | Set to True make this operation in-place. |
-## 3.10 RGB2BGR : BGR2RGB
+## 4.10 RGB2BGR : BGR2RGB
 
 [TOC](#table-of-contents)
 
@@ -1468,7 +1531,7 @@ Initializes a new instance.
 Converts sequence of RGB images to BGR images.
 
 
-### 3.10.1 \_\_call\_\_
+### 4.10.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1481,7 +1544,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.10.2 \_\_init\_\_
+### 4.10.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1489,7 +1552,7 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 3.11 RandomCrop : MultiTransform
+## 4.11 RandomCrop : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -1500,7 +1563,7 @@ Crops Images at a random location after upscaling them. Dimensions kept the same
 ![](documentation/image/multi_transforms.RandomCrop.png)
 
 
-### 3.11.1 \_\_call\_\_
+### 4.11.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1513,7 +1576,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.11.2 \_\_init\_\_
+### 4.11.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1526,7 +1589,7 @@ Initializes a new instance.
 | Name | Type | Description |
 |------|------|-------------|
 | max_scale | float | Images are scaled randomly between 1. and max_scale before cropping to original size. |
-## 3.12 RandomHorizontalFlip : MultiTransform
+## 4.12 RandomHorizontalFlip : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -1537,7 +1600,7 @@ MultiTransform is an extension to keep the same transformation over a sequence o
 > **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
 
 
-### 3.12.1 \_\_call\_\_
+### 4.12.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1550,7 +1613,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.12.2 \_\_init\_\_
+### 4.12.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1558,7 +1621,7 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 3.13 RandomVerticalFlip : MultiTransform
+## 4.13 RandomVerticalFlip : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -1569,7 +1632,7 @@ MultiTransform is an extension to keep the same transformation over a sequence o
 > **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
 
 
-### 3.13.1 \_\_call\_\_
+### 4.13.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1582,7 +1645,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.13.2 \_\_init\_\_
+### 4.13.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1590,7 +1653,7 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 3.14 Resize : MultiTransform
+## 4.14 Resize : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -1601,7 +1664,7 @@ MultiTransform is an extension to keep the same transformation over a sequence o
 > **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
 
 
-### 3.14.1 \_\_call\_\_
+### 4.14.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1614,7 +1677,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.14.2 \_\_init\_\_
+### 4.14.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1622,7 +1685,7 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 3.15 Rotate : MultiTransform
+## 4.15 Rotate : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -1637,7 +1700,7 @@ $angle = -max\_angle + 2 \cdot random() \cdot max\_angle$
 ![](documentation/image/multi_transforms.Rotate.png)
 
 
-### 3.15.1 \_\_call\_\_
+### 4.15.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1650,7 +1713,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.15.2 \_\_init\_\_
+### 4.15.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1664,7 +1727,7 @@ Iitializes a new instance.
 |------|------|-------------|
 | max_angle | float | Maximal rotation in degrees | -max_angle <= rotate <= max_angle |
 | auto_scale | bool, default = True | Image will be resized when auto scale is activated to avoid black margins. |
-## 3.16 Satturation : MultiTransform
+## 4.16 Satturation : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -1675,7 +1738,7 @@ MultiTransform is an extension to keep the same transformation over a sequence o
 > **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
 
 
-### 3.16.1 \_\_call\_\_
+### 4.16.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1688,7 +1751,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.16.2 \_\_init\_\_
+### 4.16.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1696,7 +1759,7 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 3.17 Scale : MultiTransform
+## 4.17 Scale : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -1707,7 +1770,7 @@ MultiTransform is an extension to keep the same transformation over a sequence o
 > **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
 
 
-### 3.17.1 \_\_call\_\_
+### 4.17.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1720,7 +1783,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.17.2 \_\_init\_\_
+### 4.17.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1728,7 +1791,7 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 3.18 Stack : MultiTransform
+## 4.18 Stack : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -1739,7 +1802,7 @@ MultiTransform is an extension to keep the same transformation over a sequence o
 > **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
 
 
-### 3.18.1 \_\_call\_\_
+### 4.18.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1752,7 +1815,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.18.2 \_\_init\_\_
+### 4.18.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1760,7 +1823,7 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 3.19 ToCVImage : MultiTransform
+## 4.19 ToCVImage : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -1769,7 +1832,7 @@ Initializes a new instance.
 Converts a `torch.Tensor`to Open CV image by changing dimensions (d0, d1, d2) -> (d1, d2, d0) and converting `torch.Tensor` to `numpy`.
 
 
-### 3.19.1 \_\_call\_\_
+### 4.19.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1782,7 +1845,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.19.2 \_\_init\_\_
+### 4.19.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1790,7 +1853,7 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 3.20 ToNumpy : MultiTransform
+## 4.20 ToNumpy : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -1799,7 +1862,7 @@ Initializes a new instance.
 Converts a `torch.Tensor`to `numpy`
 
 
-### 3.20.1 \_\_call\_\_
+### 4.20.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1812,7 +1875,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.20.2 \_\_init\_\_
+### 4.20.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1820,7 +1883,7 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 3.21 ToPILImage : MultiTransform
+## 4.21 ToPILImage : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -1829,7 +1892,7 @@ Initializes a new instance.
 Converts sequence of images to sequence of `PIL.Image`.
 
 
-### 3.21.1 \_\_call\_\_
+### 4.21.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1842,7 +1905,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.21.2 \_\_init\_\_
+### 4.21.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1850,7 +1913,7 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 3.22 ToTensor : MultiTransform
+## 4.22 ToTensor : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -1859,7 +1922,7 @@ Initializes a new instance.
 Converts a sequence of images to torch.Tensor.
 
 
-### 3.22.1 \_\_call\_\_
+### 4.22.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
 
@@ -1872,7 +1935,7 @@ Call self as a function.
 | Name | Type | Description |
 |------|------|-------------|
 | input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
-### 3.22.2 \_\_init\_\_
+### 4.22.2 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1880,18 +1943,18 @@ Call self as a function.
 
 Initializes a new instance.
 
-# 4 run
+# 5 run
 
 [TOC](#table-of-contents)
 
 The module `rsp.ml.run` provides some tools for storing, loading and visualizing data during training of models using PyTorch. 
 
-## 4.1 Run : builtins.object
+## 5.1 Run : builtins.object
 
 [TOC](#table-of-contents)
 
 
-### 4.1.1 \_\_init\_\_
+### 5.1.1 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -1899,63 +1962,63 @@ The module `rsp.ml.run` provides some tools for storing, loading and visualizing
 
 Initialize self.  See help(type(self)) for accurate signature.
 
-### 4.1.2 append
+### 5.1.2 append
 
 [TOC](#table-of-contents)
 
-### 4.1.3 get\_avg
+### 5.1.3 get\_avg
 
 [TOC](#table-of-contents)
 
-### 4.1.4 get\_val
+### 5.1.4 get\_val
 
 [TOC](#table-of-contents)
 
-### 4.1.5 len
+### 5.1.5 len
 
 [TOC](#table-of-contents)
 
-### 4.1.6 load\_best\_state\_dict
+### 5.1.6 load\_best\_state\_dict
 
 [TOC](#table-of-contents)
 
-### 4.1.7 load\_state\_dict
+### 5.1.7 load\_state\_dict
 
 [TOC](#table-of-contents)
 
-### 4.1.8 pickle\_dump
+### 5.1.8 pickle\_dump
 
 [TOC](#table-of-contents)
 
-### 4.1.9 pickle\_load
+### 5.1.9 pickle\_load
 
 [TOC](#table-of-contents)
 
-### 4.1.10 plot
+### 5.1.10 plot
 
 [TOC](#table-of-contents)
 
-### 4.1.11 recalculate\_moving\_average
+### 5.1.11 recalculate\_moving\_average
 
 [TOC](#table-of-contents)
 
-### 4.1.12 save
+### 5.1.12 save
 
 [TOC](#table-of-contents)
 
-### 4.1.13 save\_best\_state\_dict
+### 5.1.13 save\_best\_state\_dict
 
 [TOC](#table-of-contents)
 
-### 4.1.14 save\_state\_dict
+### 5.1.14 save\_state\_dict
 
 [TOC](#table-of-contents)
 
-### 4.1.15 train\_epoch
+### 5.1.15 train\_epoch
 
 [TOC](#table-of-contents)
 
-### 4.1.16 validate\_epoch
+### 5.1.16 validate\_epoch
 
 [TOC](#table-of-contents)
 

@@ -18,13 +18,13 @@ class WEIGHTS(Enum):
 def load_model(
         model:MODELS,
         weights:WEIGHTS
-    ):
+    ) -> torch.nn.Module:
     """
     Loads a pretrained PyTorch model from HuggingFace.
 
     Parameters
     ----------
-    model : MODEL
+    model : MODELS
         ID of the model
     weights : WEIGHTS
         ID of the weights
@@ -34,6 +34,11 @@ def load_model(
     torch.nn.Module
         Pretrained PyTorch model
     """
+    if isinstance(model, str):
+        model = MODELS(model)
+    if isinstance(weights, str):
+        weights = WEIGHTS(weights)
+
     api = huggingface_hub.HfApi()
     model_path = api.hf_hub_download(f'SchulzR97/{model.value}', filename=weights.value)
 
