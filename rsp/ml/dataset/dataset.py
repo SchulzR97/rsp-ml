@@ -7,10 +7,19 @@ import cv2 as cv
 import torch
 import rsp.ml.multi_transforms.multi_transforms as multi_transforms
 
+# __example__ from rsp.ml.dataset import TUC_AR
+# __example__ 
+# __example__ transforms = multi_transforms.Compose([multi_transforms.Resize((400, 400))])
+# __example__ tuc_ar_ds = TUC_AR(
+# __example__               split='val',
+# __example__               depth_channel=True,
+# __example__               transforms=transforms,
+# __example__               num_actions=10,
+# __example__               streaming=True)
 class TUC_AR(IterableDataset):
     """
     Small-scal action recognition dataset.
-    
+
     Wrapper class for loading [SchulzR97/TUC-AR](https://huggingface.co/datasets/SchulzR97/TUC-AR) HuggingFace dataset as `torch.util.data.IterableDataset`.
 
     TUC-AR is a small scale action recognition dataset, containing 6(+1) action categories for human machine interaction. 

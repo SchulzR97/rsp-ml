@@ -255,9 +255,10 @@ def generate_function(base_module:str, number:str, obj):
                     line = line[1:]
                 equations += f'{line}\n\n'
             elif '__example__' in line:
+                line = line.replace('__example__ ', '')
                 line = line.replace('__example__', '')
-                while len(line) > 0 and line[0] == ' ':
-                    line = line[1:]
+                # while len(line) > 0 and line[0] == ' ':
+                #     line = line[1:]
                 line = line.replace('\t', '  ')
                 line = line.replace('\\n', '\n')
                 if examples == '':
@@ -300,9 +301,10 @@ def parse_comments(comments):
                     line = line[1:]
                 result['equations'].append(line)
             elif '__example__' in line:
+                line = line.replace('__example__ ', '')
                 line = line.replace('__example__', '')
-                while len(line) > 0 and line[0] == ' ':
-                    line = line[1:]
+                # while len(line) > 0 and line[0] == ' ':
+                #     line = line[1:]
                 line = line.replace('\t', '  ')
                 line = line.replace('\\n', '\n')
                 result['examples'].append(line)

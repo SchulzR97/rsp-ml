@@ -135,6 +135,8 @@ This project provides some usefull machine learning functionality.
 
 **Description**
 
+Small-scal action recognition dataset.
+
 Wrapper class for loading [SchulzR97/TUC-AR](https://huggingface.co/datasets/SchulzR97/TUC-AR) HuggingFace dataset as `torch.util.data.IterableDataset`.
 
 TUC-AR is a small scale action recognition dataset, containing 6(+1) action categories for human machine interaction. 
@@ -157,7 +159,19 @@ TUC-AR is a small scale action recognition dataset, containing 6(+1) action cate
 | A005   | Walking  |
 | A006   | Stop     |
 
+**Example**
 
+```python
+ from rsp.ml.dataset import TUC_AR
+ 
+ transforms = multi_transforms.Compose([multi_transforms.Resize((400, 400))])
+ tuc_ar_ds = TUC_AR(
+               split='val',
+               depth_channel=True,
+               transforms=transforms,
+               num_actions=10,
+               streaming=True)
+```
 ### 1.1.1 \_\_init\_\_
 
 [TOC](#table-of-contents)
