@@ -11,6 +11,7 @@ class MODELS(Enum):
 class WEIGHTS(Enum):
     TUCAR = 'tuc-ar.pth'
     UCF101 = 'ufc101.pth'
+    NTURGB_CS = 'ntu-rgb_cs.pth'
 
 #__example__ #import rsp.ml.model as model
 #__example__
@@ -34,13 +35,13 @@ def load_model(
     torch.nn.Module
         Pretrained PyTorch model
     """
-    if isinstance(model, str):
-        model = MODELS(model)
-    if isinstance(weights, str):
-        weights = WEIGHTS(weights)
+    if isinstance(model, MODELS):
+        model = model.value
+    if isinstance(weights, WEIGHTS):
+        weights = weights.value
 
     api = huggingface_hub.HfApi()
-    model_path = api.hf_hub_download(f'SchulzR97/{model.value}', filename=weights.value)
+    model_path = api.hf_hub_download(f'SchulzR97/{model}', filename=weights)
 
     model = torch.jit.load(model_path)
 
