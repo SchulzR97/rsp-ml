@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages, find_namespace_packages
 
-VERSION = '0.0.81' 
+VERSION = '0.0.87' 
 DESCRIPTION = 'Machine Learning'
 with open('README.md') as f:
     LONG_DESCRIPTION = f.read()
@@ -18,7 +18,7 @@ setup(
         package_dir={"rsp": "rsp"},
         include_package_data=True,
         package_data={
-            #"rsp": ["drl/environment/image/*.png"]
+            "rsp": ["ml/dataset/links/**/**/*.txt"]
         },
         license="MIT",
         packages=find_packages(),
@@ -35,7 +35,8 @@ setup(
             'pandas',
             'seaborn',
             'googledriver',
-            'huggingface-hub'
+            'huggingface-hub',
+            'datasets'
         ], # add any additional packages that 
         # needs to be installed along with your package. Eg: 'caer'
         url = "https://github.com/SchulzR97/rsp-ml",
