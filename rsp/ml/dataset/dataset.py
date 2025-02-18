@@ -14,7 +14,10 @@ import torch
 import rsp.ml.multi_transforms.multi_transforms as multi_transforms
 from tqdm import tqdm
 from glob import glob
+from threading import Thread
+import time
 import pandas as pd
+import rsp.common.console as console
 
 # __example__ from rsp.ml.dataset import TUC_AR
 # __example__ 
@@ -145,7 +148,9 @@ class Kinetics(Dataset):
         split:str,
         type:int = 400,
         frame_size = (400, 400),
-        transforms:multi_transforms.Compose = multi_transforms.Compose([])
+        transforms:multi_transforms.Compose = multi_transforms.Compose([]),
+        cache_dir:str = None,
+        num_threads:int = 0
     ):
         """
         Initializes a new instance.
@@ -160,6 +165,10 @@ class Kinetics(Dataset):
             Size of the frames. The frames will be resized to this size.
         transforms : rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([])
             Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details.
+        cache_dir : str, default = None
+            Directory to store the downloaded files. If set to `None`, the default cache directory will be used
+        num_threads : int, default = 0
+            Number of threads to use for downloading the files.
         """
         super().__init__()
 
@@ -171,21 +180,26 @@ class Kinetics(Dataset):
         self.frame_size = frame_size
         self.sequence_length = 10
         self.transforms = transforms
+        self.num_threads = num_threads
+
+        if cache_dir is None:
+            self.__cache_dir__ = Path(user_cache_dir("rsp-ml", "Robert Schulz")).joinpath('dataset', 'kinetics')
+        else:
+            self.__cache_dir__ = Path(cache_dir)
+        self.__cache_dir__.mkdir(parents=True, exist_ok=True)
 
         self.__toTensor__ = multi_transforms.ToTensor()
         self.__stack__ = multi_transforms.Stack()
 
-        self.__cache_dir__ = Path(user_cache_dir("rsp-ml", "Robert Schulz")).joinpath('dataset', 'kinetics')
-        self.__cache_dir__.mkdir(parents=True, exist_ok=True)
-
         self.__download__()
-        self.__annotations__ = self.__load_annotations__()
-        self.__labels__ = self.__get_labels__()
+        self.__annotations__, self.action_labels = self.__load_annotations_labels__()
+        #self.__labels__ = self.__get_labels__()
         self.__files__ = self.__list_files__()
 
     def __getitem__(self, index):
-        annotation = self.__annotations__[index]
-        fname = self.__files__[annotation['youtube_id']]
+        youtube_id, fname = self.__files__[index]
+
+        annotation = self.__annotations__[youtube_id]
 
         if annotation['time_end'] - annotation['time_start'] > self.sequence_length:
             start_idx = np.random.randint(annotation['time_start'], annotation['time_end']-self.sequence_length)
@@ -208,9 +222,13 @@ class Kinetics(Dataset):
                 break
         frames = np.array(frames) / 255
 
-        X = torch.tensor(frames).permute(0, 3, 1, 2)
-        T = torch.zeros((len(self.__labels__)))
-        cls = self.__labels__[annotation['label']]
+        if len(frames) == 0:
+            X = torch.zeros((self.sequence_length, 3, *self.frame_size), dtype=torch.float32)
+            console.warning(f'No frames found for {youtube_id}.')
+        else:
+            X = torch.tensor(frames).permute(0, 3, 1, 2)
+        T = torch.zeros((len(self.action_labels)))
+        cls = self.action_labels.index(annotation['label'])
         T[cls] = 1
 
         return X, T
@@ -231,8 +249,16 @@ class Kinetics(Dataset):
             fname = pkg_resources.resource_filename('rsp', resource_name)
             return Path(fname)
         
-        def download_file(link, fname):
-            urllib.request.urlretrieve(link, fname)
+        def download_file(link, fname, retries = 10):
+            attempt = 0
+            while attempt < retries:
+                try:
+                    urllib.request.urlretrieve(link, fname)
+                    break
+                except urllib.error.ContentTooShortError as e:
+                    attempt += 1
+                except Exception as e:
+                    attempt += 1
 
         def unpack(src, dest, remove = True):
             with tarfile.open(src, "r:gz") as tar:
@@ -264,6 +290,8 @@ class Kinetics(Dataset):
         cache_videos_dir = self.__cache_dir__.joinpath('videos')
         cache_videos_dir.mkdir(parents=True, exist_ok=True)
 
+        threads = []
+
         prog1 = tqdm(path_link_files)
         for link_file in prog1:
             prog1.set_description(f'Downloading {link_file.stem}')
@@ -274,50 +302,74 @@ class Kinetics(Dataset):
             for link in prog2:
                 prog2.set_description(link)
 
-                split, fname = link.split('/')[-2:]
+                def process_link(link):
+                    split, fname = link.split('/')[-2:]
 
-                video_dir = cache_videos_dir.joinpath(split, fname.split(".")[0])
-                if video_dir.exists():
-                    continue
+                    video_dir = cache_videos_dir.joinpath(split, 'k' + str(self.type) + '_' + fname.split(".")[0])
+                    if video_dir.exists():
+                        #continue
+                        return
 
-                archive_file = cache_archives_dir.joinpath(split, f'k{self.type}_{fname}')
-                archive_file.parent.mkdir(parents=True, exist_ok=True)
-                if not archive_file.exists():
-                    download_file(link, archive_file)
+                    archive_file = cache_archives_dir.joinpath(split, f'k{self.type}_{fname}')
+                    archive_file.parent.mkdir(parents=True, exist_ok=True)
+                    if not archive_file.exists():
+                        download_file(link, archive_file)
 
-                video_dir.mkdir(parents=True, exist_ok=True)
-                unpack(archive_file, video_dir, remove=True)
+                    video_dir.mkdir(parents=True, exist_ok=True)
+                    try:
+                        unpack(archive_file, video_dir, remove=True)
+                    except Exception as e:
+                        video_dir.rmdir()
+                        os.remove(archive_file)
+                        download_file(link, archive_file)
+                        unpack(archive_file, video_dir, remove=True)
 
-    def __load_annotations__(self):
+                if self.num_threads == 0:
+                    process_link(link)
+                else:
+                    thread = Thread(target=process_link, args=(link,))
+                    while len(threads) >= self.num_threads:
+                        threads = [t for t in threads if t.is_alive()]
+                        time.sleep(0.1)
+                    thread.start()
+                    threads.append(thread)
+
+    def __load_annotations_labels__(self):
         annotations_file = self.__cache_dir__.joinpath('annotations', f'k{self.type}_{self.split}.csv')
-        annotations = []
+        annotations = {}
+        labels = []
         with open(annotations_file, newline='') as csvfile:
             spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
             for i, row in enumerate(spamreader):
                 if i == 0:
                     continue
                 label, youtube_id, time_start, time_end, split, is_cc = row[0], row[1], int(row[2]), int(row[3]), row[4], int(row[5])
-                annotations.append({
+                label = label.replace('"', '')
+                annotations[youtube_id] = {
                     'label': label,
-                    'youtube_id': youtube_id,
+                    #'youtube_id': youtube_id,
                     'time_start': time_start,
                     'time_end': time_end,
                     'split': split,
                     'is_cc': is_cc
-                })
-        return annotations
+                }
+                if label not in labels:
+                    labels.append(label)
+        return annotations, sorted(labels)
 
     def __list_files__(self):
         videos_dir = self.__cache_dir__.joinpath('videos', self.split)
-        links = glob(f'{videos_dir}/**/*.mp4')
-        files = {}
+        links = glob(f'{videos_dir}/k{self.type}*/*.mp4')
+        files = []#{}
         for link in links:
             youtube_id = Path(link).name[:-18]
-            files[youtube_id] = link
+            #files[youtube_id] = link
+            files.append((youtube_id, link))
         return files
 
 if __name__ == '__main__':
-    k400 = Kinetics('train')
+    k400 = Kinetics('train', num_threads=2, cache_dir='/Volumes/USB-Freigabe/KINETICS400')#cache_dir='/Volumes/ROBERT512GB/KINETICS400')
 
-    for X, T in k400:
+    for i, (X, T) in enumerate(k400):
+        print(i)
         pass

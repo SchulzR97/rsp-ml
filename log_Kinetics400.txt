@@ -1,0 +1,32 @@
+2025-32-18-11:02:18.035714 [INFO] Downloading k400_train_path
+2025-32-18-11:02:18.036881 [INFO] https://s3.amazonaws.com/kinetics/400/train/part_0.tar.gz
+2025-32-18-11:02:18.051659 [INFO] /Volumes/USB-Freigabe/KINETICS400/videos/train/k400_part_0 already exists.
+2025-32-18-11:02:18.052146 [INFO] https://s3.amazonaws.com/kinetics/400/train/part_1.tar.gz
+2025-44-18-11:02:29.075130 [INFO] Downloaded https://s3.amazonaws.com/kinetics/400/annotations/train.csv to /Volumes/USB-Freigabe/KINETICS400/annotations/k400_train.csv
+2025-44-18-11:02:30.447296 [INFO] Downloaded https://s3.amazonaws.com/kinetics/400/annotations/val.csv to /Volumes/USB-Freigabe/KINETICS400/annotations/k400_val.csv
+2025-44-18-11:02:32.757702 [INFO] Downloaded https://s3.amazonaws.com/kinetics/400/annotations/test.csv to /Volumes/USB-Freigabe/KINETICS400/annotations/k400_test.csv
+2025-44-18-11:02:32.860339 [INFO] Downloading k400_train_path
+2025-44-18-11:02:32.862007 [INFO] https://s3.amazonaws.com/kinetics/400/train/part_0.tar.gz
+2025-04-18-12:02:41.192649 [INFO] Downloaded https://s3.amazonaws.com/kinetics/400/train/part_0.tar.gz to /Volumes/USB-Freigabe/KINETICS400/archives/train/k400_part_0.tar.gz
+2025-04-18-12:02:41.396952 [ERROR] Error unpacking /Volumes/USB-Freigabe/KINETICS400/archives/train/k400_part_0.tar.gz: not a gzip file
+2025-22-18-12:02:21.787021 [INFO] Downloaded https://s3.amazonaws.com/kinetics/400/annotations/train.csv to /Volumes/USB-Freigabe/KINETICS400/annotations/k400_train.csv
+2025-22-18-12:02:26.568811 [INFO] Downloaded https://s3.amazonaws.com/kinetics/400/annotations/val.csv to /Volumes/USB-Freigabe/KINETICS400/annotations/k400_val.csv
+2025-22-18-12:02:29.128406 [INFO] Downloaded https://s3.amazonaws.com/kinetics/400/annotations/test.csv to /Volumes/USB-Freigabe/KINETICS400/annotations/k400_test.csv
+2025-22-18-12:02:29.246462 [INFO] Downloading k400_train_path
+2025-22-18-12:02:29.247932 [INFO] https://s3.amazonaws.com/kinetics/400/train/part_0.tar.gz
+2025-22-18-12:02:29.248875 [INFO] https://s3.amazonaws.com/kinetics/400/train/part_1.tar.gz
+2025-22-18-12:02:29.249613 [INFO] https://s3.amazonaws.com/kinetics/400/train/part_2.tar.gz
+2025-43-18-12:02:49.046824 [ERROR] Error downloading https://s3.amazonaws.com/kinetics/400/train/part_1.tar.gz (attempt 1): [Errno 57] Socket is not connected
+2025-43-18-12:02:49.065019 [ERROR] Error downloading https://s3.amazonaws.com/kinetics/400/train/part_0.tar.gz (attempt 1): [Errno 5] Input/output error
+2025-43-18-12:02:59.335137 [ERROR] Error downloading https://s3.amazonaws.com/kinetics/400/train/part_0.tar.gz (attempt 2): <urlopen error [Errno 8] nodename nor servname provided, or not known>
+2025-43-18-12:02:59.335303 [ERROR] Error downloading https://s3.amazonaws.com/kinetics/400/train/part_1.tar.gz (attempt 2): <urlopen error [Errno 8] nodename nor servname provided, or not known>
+2025-44-18-12:02:10.100823 [ERROR] Error downloading https://s3.amazonaws.com/kinetics/400/train/part_1.tar.gz (attempt 3): [Errno 2] No such file or directory: '/Volumes/USB-Freigabe/KINETICS400/archives/train/k400_part_1.tar.gz'
+2025-44-18-12:02:10.101046 [ERROR] Error downloading https://s3.amazonaws.com/kinetics/400/train/part_0.tar.gz (attempt 3): [Errno 2] No such file or directory: '/Volumes/USB-Freigabe/KINETICS400/archives/train/k400_part_0.tar.gz'
+2025-44-18-12:02:13.252566 [ERROR] Error downloading https://s3.amazonaws.com/kinetics/400/train/part_0.tar.gz (attempt 4): [Errno 2] No such file or directory: '/Volumes/USB-Freigabe/KINETICS400/archives/train/k400_part_0.tar.gz'
+2025-44-18-12:02:13.254362 [ERROR] Error downloading https://s3.amazonaws.com/kinetics/400/train/part_1.tar.gz (attempt 4): [Errno 2] No such file or directory: '/Volumes/USB-Freigabe/KINETICS400/archives/train/k400_part_1.tar.gz'
+2025-44-18-12:02:16.088832 [ERROR] Error downloading https://s3.amazonaws.com/kinetics/400/train/part_0.tar.gz (attempt 5): [Errno 2] No such file or directory: '/Volumes/USB-Freigabe/KINETICS400/archives/train/k400_part_0.tar.gz'
+2025-44-18-12:02:16.089914 [ERROR] Error downloading https://s3.amazonaws.com/kinetics/400/train/part_1.tar.gz (attempt 5): [Errno 2] No such file or directory: '/Volumes/USB-Freigabe/KINETICS400/archives/train/k400_part_1.tar.gz'
+2025-44-18-12:02:18.338392 [ERROR] Error downloading https://s3.amazonaws.com/kinetics/400/train/part_0.tar.gz (attempt 6): [Errno 2] No such file or directory: '/Volumes/USB-Freigabe/KINETICS400/archives/train/k400_part_0.tar.gz'
+2025-44-18-12:02:18.340044 [ERROR] Error downloading https://s3.amazonaws.com/kinetics/400/train/part_1.tar.gz (attempt 6): [Errno 2] No such file or directory: '/Volumes/USB-Freigabe/KINETICS400/archives/train/k400_part_1.tar.gz'
+2025-44-18-12:02:20.620827 [ERROR] Error downloading https://s3.amazonaws.com/kinetics/400/train/part_1.tar.gz (attempt 7): [Errno 2] No such file or directory: '/Volumes/USB-Freigabe/KINETICS400/archives/train/k400_part_1.tar.gz'
+2025-44-18-12:02:20.621047 [ERROR] Error downloading https://s3.amazonaws.com/kinetics/400/train/part_0.tar.gz (attempt 7): [Errno 2] No such file or directory: '/Volumes/USB-Freigabe/KINETICS400/archives/train/k400_part_0.tar.gz'
