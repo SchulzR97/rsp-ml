@@ -340,8 +340,10 @@ class TUCRID(Dataset):
         sequence = self.sequences[idx]
         id = sequence['id']
         action = sequence['action']
+        link = sequence['link']
 
-        color_files = sorted(glob(f'{TUCRID.COLOR_DIRECTORY}/{id}/*_color.jpg'))
+        color_files = sorted(glob(f'{TUCRID.COLOR_DIRECTORY}/{link}/*.jpg'))
+        assert len(color_files) >= self.sequence_length, f'Not enough frames for {id}.'
 
         if len(color_files) > self.sequence_length:
             start_idx = np.random.randint(0, len(color_files) - self.sequence_length)
@@ -360,7 +362,7 @@ class TUCRID(Dataset):
             color_images.append(img)
 
             if self.load_depth_data:
-                depth_file = TUCRID.DEPTH_DIRECTORY.joinpath(id, color_file.name.replace('_color', '_depth'))
+                depth_file = TUCRID.DEPTH_DIRECTORY.joinpath(f'{link}/{color_file.name}')
                 img = cv.imread(str(depth_file), cv.IMREAD_UNCHANGED)
                 depth_images.append(img)
         
@@ -394,7 +396,7 @@ class TUCRID(Dataset):
                     repo_id=TUCRID.REPO_ID,
                     repo_type='dataset',
                     local_dir=TUCRID.CACHE_DIRECTORY,
-                    filename=filename
+                    filename=str(filename)
                 )
                 break
             except Exception as e:
@@ -429,33 +431,33 @@ class TUCRID(Dataset):
 
     def __download_sequences__(load_depth_data):
         repo_files = [Path(file) for file in list_repo_files(TUCRID.REPO_ID, repo_type='dataset')]
-        
-        prog1 = tqdm(repo_files, leave=False)
-        for repo_file in prog1:
-            prog1.set_description(f'Downloading {repo_file}')
-            
-            # color
-            if repo_file.parent.name == 'color':
-                seq_dir = TUCRID.COLOR_DIRECTORY.joinpath(repo_file.stem.replace('.tar', ''))
-                if seq_dir.exists() and len(os.listdir(seq_dir)) > 0:
+        color_files = [file for file in repo_files if file.parent.name == 'color']
+
+        prog = tqdm(color_files)
+        for color_file in prog:
+            prog.set_description(f'Downloading {color_file}')
+            local_dir = TUCRID.COLOR_DIRECTORY.joinpath(color_file.name.replace('.tar.gz', ''))
+            if local_dir.exists() and len(os.listdir(local_dir)) > 0:
+                continue
+            TUCRID.__download_file__(color_file)
+            tar_color = TUCRID.COLOR_DIRECTORY.joinpath(color_file.name)
+            with tarfile.open(tar_color, 'r:gz') as tar:
+                tar.extractall(local_dir)
+            os.remove(tar_color)
+
+        if load_depth_data:
+            depth_files = [file for file in repo_files if file.parent.name == 'depth']
+            prog = tqdm(depth_files)
+            for depth_file in prog:
+                prog.set_description(f'Downloading {depth_file}')
+                local_dir = TUCRID.DEPTH_DIRECTORY.joinpath(depth_file.name.replace('.tar.gz', ''))
+                if local_dir.exists() and len(os.listdir(local_dir)) > 0:
                     continue
-                TUCRID.__download_file__(str(repo_file))
-                tar_file = TUCRID.COLOR_DIRECTORY.joinpath(repo_file.name)
-                with tarfile.open(tar_file, 'r:gz') as tar:
-                    tar.extractall(seq_dir)
-                os.remove(tar_file)
-            
-            # depth
-            if load_depth_data:
-                if repo_file.parent.name == 'depth':
-                    seq_dir = TUCRID.DEPTH_DIRECTORY.joinpath(repo_file.stem.replace('.tar', ''))
-                    if seq_dir.exists() and len(os.listdir(seq_dir)) > 0:
-                        continue
-                    TUCRID.__download_file__(str(repo_file))
-                    tar_file = TUCRID.DEPTH_DIRECTORY.joinpath(repo_file.name)
-                    with tarfile.open(tar_file, 'r:gz') as tar:
-                        tar.extractall(seq_dir)
-                    os.remove(tar_file)
+                TUCRID.__download_file__(depth_file)
+                tar_depth = TUCRID.DEPTH_DIRECTORY.joinpath(depth_file.name)
+                with tarfile.open(tar_depth, 'r:gz') as tar:
+                    tar.extractall(local_dir)
+                os.remove(tar_depth)
 
     def __load__(self):
         with open(TUCRID.CACHE_DIRECTORY.joinpath(f'{self.phase}.json'), 'r') as f:
