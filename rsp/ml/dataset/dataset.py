@@ -1,148 +1,508 @@
-from enum import Enum
-from torch.utils.data import IterableDataset, Dataset
-from datasets import load_dataset
+from torch.utils.data import Dataset
+from pathlib import Path
+from platformdirs import user_cache_dir
+from tqdm import tqdm
+from glob import glob
+from threading import Thread
+from typing import List
+from huggingface_hub import hf_hub_download, list_repo_files
 import numpy as np
 import os
-from pathlib import Path
+import json
 import pkg_resources
-from platformdirs import user_cache_dir
 import urllib
 import tarfile
 import cv2 as cv
 import csv
 import torch
 import rsp.ml.multi_transforms.multi_transforms as multi_transforms
-from tqdm import tqdm
-from glob import glob
-from threading import Thread
 import time
 import pandas as pd
-import rsp.common.console as console
+try:
+    import rsp.common.console as console
+except Exception as e:
+    print(e)
 
-# __example__ from rsp.ml.dataset import TUC_AR
-# __example__ 
-# __example__ transforms = multi_transforms.Compose([multi_transforms.Resize((400, 400))])
-# __example__ tuc_ar_ds = TUC_AR(
-# __example__               split='val',
-# __example__               depth_channel=True,
-# __example__               transforms=transforms,
-# __example__               num_actions=10,
-# __example__               streaming=True)
-class TUC_AR(IterableDataset):
+#__example__ from rsp.ml.dataset import ReplaceBackgroundRGB
+#__example__ from rsp.ml.dataset import TUCRID
+#__example__
+#__example__ backgrounds = TUCRID.load_backgrounds()
+class ReplaceBackground(multi_transforms.MultiTransform):
     """
-    Small-scale action recognition dataset.
-
-    Wrapper class for loading [SchulzR97/TUC-AR](https://huggingface.co/datasets/SchulzR97/TUC-AR) HuggingFace dataset as `torch.util.data.IterableDataset`.
-
-    TUC-AR is a small scale action recognition dataset, containing 6(+1) action categories for human machine interaction. 
-
-    **Facts**
-    - RGB and depth input recorded by Intel RealSense D435 depth camera
-    - 8 subjects
-    - 11,031 sequences (train 8,893/ val 2,138)
-    - 3 perspectives per scene
-    - 6(+1) action classes<br>
-
-    **Action Classes**
-    | Action | Label    |
-    |--------|----------|
-    | A000   | None     |
-    | A001   | Waving   |
-    | A002   | Pointing |
-    | A003   | Clapping |
-    | A004   | Follow   |
-    | A005   | Walking  |
-    | A006   | Stop     |
+    Transformation for background replacement based on HSV values. ReplaceBackground is an abstract class. Please inherit!
     """
-    def __init__(
-            self,
-            split:str,
-            depth_channel:bool,
-            num_actions:int = 7,
-            streaming:bool = False,
-            sequence_length:int = 30,
-            transforms:multi_transforms.Compose = multi_transforms.Compose([])
-    ):
+    def __init__(self):
         """
         Initializes a new instance.
-        
-        Parameters
-        ----------
-        split : str
-            Dataset split [train|val]
-        depth_channel : bool
-            Load depth channel. If set to `True`, the generated input tensor will have 4 channels instead of 3. (batch_size, sequence_length, __channels__, width, height)
-        num_actions : int, default = 7
-            Number of action classes -> shape[1] of target tensor (batch_size, **num_actions**)
-        streaming : bool, default = False
-            If set to `True`, don't download the data files. Instead, it streams the data progressively while iterating on the dataset.
-        sequence_length : int, default = 30
-            Length of each sequence. -> shape[1] of the generated input tensor. (batch_size, **sequence_length**, channels, width, height)
-        transforms : rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([])
-            Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details.
         """
         super().__init__()
 
-        assert split in ['train', 'val']
+    def __call__(self, inputs):
+        """
+        Applies the transformation to the input data.
+        """
+        raise Exception('This is an abstract class. Please override the __call__ method.')
 
-        self.split = split
-        self.depth_channel = depth_channel
-        self.num_actions = num_actions
-        self.streaming = streaming
+    def hsv_filter(self, img, hmin, hmax, smin, smax, vmin, vmax, inverted):
+        """
+        Filters the input image based on HSV values.
+
+        Parameters
+        ----------
+        img : np.array
+            Input image
+        hmin : int
+            Minimum hue value
+        hmax : int
+            Maximum hue value
+        smin : int
+            Minimum saturation value
+        smax : int
+            Maximum saturation value
+        vmin : int
+            Minimum value value
+        vmax : int
+            Maximum value value
+        inverted : bool
+            Invert the mask
+        """
+        hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+        lower = (hmin, smin, vmin)
+        upper = (hmax, smax, vmax)
+        mask = cv.inRange(hsv, lower, upper)
+        if inverted:
+            mask = 255 - mask
+        return mask
+
+    def change_background(self, img, bg, mask):
+        """
+        Changes the background of the input image.
+
+        Parameters
+        ----------
+        img : np.array
+            Input image
+        bg : np.array
+            Background image
+        mask : np.array
+            Mask
+        """
+        w, h = img.shape[1], img.shape[0]
+        bg_w, bg_h = bg.shape[1], bg.shape[0]
+        scale = np.min([w / bg_w, h / bg_h])
+        new_w, new_h = int(np.round(scale * bg_w)), int(np.round(scale * bg_h))
+
+        bg = cv.resize(bg, (new_w, new_h))
+
+        img[mask > 0] = bg[mask > 0]
+
+        return img
+
+class ReplaceBackgroundRGB(ReplaceBackground):
+    """
+    Transformation for background replacement based on HSV values. ReplaceBackgroundRGB is a concrete class for RGB images.
+    """
+    def __init__(
+            self,
+            backgrounds:List[np.array],
+            hsv_filter:List[tuple[int, int, int, int, int, int]] = [(69, 87, 139, 255, 52, 255)],
+            p:float = 1.
+        ):
+        """
+        Initializes a new instance.
+
+        Parameters
+        ----------
+        backgrounds : List[np.array]
+            List of background images
+        hsv_filter : List[tuple[int, int, int, int, int, int]]
+            List of HSV filters
+        p : float, default = 1.
+            Probability of applying the transformation
+        """
+        super().__init__()
+        self.backgrounds = backgrounds
+        self.__hsv_filter__ = hsv_filter
+        self.p = p
+
+        self.__toTensor__ = multi_transforms.ToTensor()
+        self.__toPILImage__ = multi_transforms.ToPILImage()
+        self.__toCVImage__ = multi_transforms.ToCVImage()
+
+    def __call__(self, inputs):
+        self.__get_size__(inputs)
+        self.__reset__()
+
+        if self.__replace_background__:
+            is_tensor = isinstance(inputs[0], torch.Tensor)
+            if not is_tensor:
+                inputs = self.__toTensor__(inputs)
+
+            results = []
+            for i, input in enumerate(self.__toCVImage__(inputs)):
+                img = np.asarray(input * 255, dtype=np.uint8)
+
+                mask = np.ones((input.shape[0], input.shape[1]))
+                for f in self.__hsv_filter__:
+                    hsv_mask = self.hsv_filter(img.copy(), f[0], f[1], f[2], f[3], f[4], f[5], inverted = False)
+                    hsv_mask = hsv_mask / 255
+
+                    mask = cv.bitwise_and(mask, hsv_mask)
+
+                mask = np.asarray(mask, dtype=np.uint8)
+
+                bg = np.asarray(self.__background__ / 255, dtype=np.float32)
+
+                result = self.change_background(input, bg, mask)
+
+                results.append(result)
+
+            results = self.__toTensor__(results)
+
+            if not is_tensor:
+                results = self.__toPILImage__(results)
+        else:
+            results = inputs
+        return results
+
+    def __reset__(self):
+        self.__replace_background__ = np.random.random() < self.p
+        idx = np.random.randint(0, len(self.backgrounds))
+        self.__background__ = self.backgrounds[idx]
+
+class ReplaceBackgroundRGBD(ReplaceBackground):
+    """
+    Transformation for background replacement based on HSV values. ReplaceBackgroundRGBD is a concrete class for RGBD images.
+
+    Parameters
+    ----------
+    backgrounds : List[np.array]
+        List of background images
+    hsv_filter : List[tuple[int, int, int, int, int, int]]
+        List of HSV filters
+    p : float, default = 1.
+        Probability of applying the transformation
+    rotate : float, default = 5
+        Maximum rotation angle
+    max_scale : float, default = 2
+        Maximum scaling factor
+    """
+    def __init__(
+            self,
+            backgrounds:List[np.array],
+            hsv_filter:List[tuple[int, int, int, int, int, int]] = [(69, 87, 139, 255, 52, 255)],
+            p:float = 1.,
+            rotate:float = 5,
+            max_scale:float = 2):
+        super().__init__()
+        self.backgrounds = backgrounds
+        self.__hsv_filter__ = hsv_filter
+        self.p = p
+
+        self.__toTensor__ = multi_transforms.ToTensor()
+        self.__toPILImage__ = multi_transforms.ToPILImage()
+        self.__toCVImage__ = multi_transforms.ToCVImage()
+
+        self.transforms = multi_transforms.Compose([
+            multi_transforms.Rotate(rotate),
+            multi_transforms.RandomCrop(max_scale = max_scale),
+            multi_transforms.RandomHorizontalFlip(),
+            multi_transforms.RandomVerticalFlip()
+        ])
+
+    def __call__(self, inputs):
+        self.__get_size__(inputs)
+        self.__reset__()
+
+        if self.__replace_background__:
+            is_tensor = isinstance(inputs[0], torch.Tensor)
+            if not is_tensor:
+                inputs = self.__toTensor__(inputs)
+
+            is_color_image = inputs[0].shape[0] == 3
+            is_depth_image = inputs[0].shape[0] == 4
+
+            if is_color_image:
+                self.__masks__ = []
+
+            results = []
+            for i, input in enumerate(self.__toCVImage__(inputs)):
+                img = np.asarray(input * 255, dtype=np.uint8)
+                img_rgb = img[:, :, 0:3]
+
+                mask = np.ones((input.shape[0], input.shape[1]))
+                for f in self.__hsv_filter__:
+                    hsv_mask = self.hsv_filter(img_rgb.copy(), f[0], f[1], f[2], f[3], f[4], f[5], inverted = False)
+                    hsv_mask = hsv_mask / 255
+
+                    mask = cv.bitwise_and(mask, hsv_mask)
+
+                mask = np.asarray(mask, dtype=np.uint8)
+
+                bg_color = np.asarray(self.__background__[0] / 255, dtype=np.float32)
+                bg = bg_color
+                
+                if is_depth_image:
+                    bg_depth = np.asarray(self.__background__[1] / 255, dtype=np.float32)
+                    bg_depth = np.expand_dims(bg_depth, 2)
+                    bg = np.concatenate([bg_color, bg_depth], axis = 2)
+
+                result = self.change_background(input, bg, mask)
+
+                results.append(result)
+
+            results = self.__toTensor__(results)
+
+            if not is_tensor:
+                results = self.__toPILImage__(results)
+        else:
+            results = inputs
+        return results
+
+    def __reset__(self):
+        self.__replace_background__ = np.random.random() < self.p
+        idx = np.random.randint(0, len(self.backgrounds))
+        self.__background__ = self.backgrounds[idx]
+
+#__example__ from rsp.ml.dataset import TUCRID
+#__example__ from rsp.ml.dataset import ReplaceBackgroundRGBD
+#__example__ import rsp.ml.multi_transforms as multi_transforms
+#__example__ import cv2 as cv
+#__example__
+#__example__ backgrounds = TUCRID.load_backgrounds_color()
+#__example__ transforms = multi_transforms.Compose([
+#__example__     ReplaceBackgroundRGBD(backgrounds),
+#__example__     multi_transforms.Stack()
+#__example__ ])
+#__example__ 
+#__example__ ds = TUCRID('train', transforms=transforms)
+#__example__ 
+#__example__ for X, T in ds:
+#__example__   for x in X.permute(0, 2, 3, 1):
+#__example__     img_color = x[:, :, :3].numpy()
+#__example__     img_depth = x[:, :, 3].numpy()
+#__example__ 
+#__example__     cv.imshow('color', img_color)
+#__example__     cv.imshow('depth', img_depth)
+#__example__ 
+#__example__     cv.waitKey(30)
+class TUCRID(Dataset):
+    """
+    Dataset class for the Robot Interaction Dataset by University of Technology Chemnitz (TUCRID).
+    """
+    REPO_ID = 'SchulzR97/TUCRID'
+    CACHE_DIRECTORY = Path(user_cache_dir('rsp-ml', 'Robert Schulz')).joinpath('datasets', 'TUCRID')
+    COLOR_DIRECTORY = CACHE_DIRECTORY.joinpath('color')
+    DEPTH_DIRECTORY = CACHE_DIRECTORY.joinpath('depth')
+    BACKGROUND_DIRECTORY = CACHE_DIRECTORY.joinpath('background')
+    PHASES = ['train', 'val']
+
+    def __init__(
+            self,
+            phase:str,
+            load_depth_data:bool = True,
+            sequence_length:int = 30,
+            transforms:multi_transforms.Compose = multi_transforms.Compose([]),
+            cache_dir:str = None
+    ):
+        """
+        Initializes a new instance.
+
+        Parameters
+        ----------
+        phase : str
+            Dataset phase [train|val]
+        load_depth_data : bool, default = True
+            Load depth data
+        sequence_length : int, default = 30
+            Length of the sequences
+        transforms : rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([])
+            Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details.
+        """
+        assert phase in TUCRID.PHASES, f'Phase "{phase}" not in {TUCRID.PHASES}'
+
+        if cache_dir is not None:
+            TUCRID.CACHE_DIRECTORY = Path(cache_dir)
+
+        self.phase = phase
+        self.load_depth_data = load_depth_data
         self.sequence_length = sequence_length
         self.transforms = transforms
 
-        self.__dataset__ = load_dataset('SchulzR97/TUC-AR', streaming=self.streaming, split=self.split)
-        self.__image_size__ = (500, 375)
-        self.__toTensor__ = multi_transforms.ToTensor()
-        self.__stack__ = multi_transforms.Stack()
+        self.__download__()
+        self.__load__()
+        pass
 
-        self.i = 0
+    def __len__(self):
+        return len(self.sequences)
+    
+    def __getitem__(self, idx):
+        sequence = self.sequences[idx]
+        id = sequence['id']
+        action = sequence['action']
 
-    def __iter__(self):
-        self.__iterator__ = iter(self.__dataset__)
+        color_files = sorted(glob(f'{TUCRID.COLOR_DIRECTORY}/{id}/*_color.jpg'))
 
-        sequence_id = None
-        images_rgb, images_d = [], []
+        if len(color_files) > self.sequence_length:
+            start_idx = np.random.randint(0, len(color_files) - self.sequence_length)
+            end_idx = start_idx + self.sequence_length
+        else:
+            start_idx = 0
+            end_idx = start_idx + self.sequence_length
+
+        color_images = []
+        depth_images = []
+        for color_file in color_files[start_idx:end_idx]:
+
+            color_file = Path(color_file)
+
+            img = cv.imread(str(color_file))
+            color_images.append(img)
+
+            if self.load_depth_data:
+                depth_file = TUCRID.DEPTH_DIRECTORY.joinpath(id, color_file.name.replace('_color', '_depth'))
+                img = cv.imread(str(depth_file), cv.IMREAD_UNCHANGED)
+                depth_images.append(img)
+        
+        X = torch.tensor(np.array(color_images), dtype=torch.float32) / 255
+        if self.load_depth_data:
+            X_depth = torch.tensor(np.array(depth_images), dtype=torch.float32).unsqueeze(3) / 255
+            X = torch.cat([X, X_depth], dim=3)
+        X = X.permute(0, 3, 1, 2)
+        T = torch.zeros((self.sequence_length), dtype=torch.float32)
+        T[action] = 1
+
+        self.transforms.__reset__()
+        X = self.transforms(X)
+        
+        return X, T
+
+    def __download__(self):                        
+        TUCRID.CACHE_DIRECTORY.mkdir(exist_ok=True, parents=True)
+
+        TUCRID.__download_metadata__()
+
+        TUCRID.__download_backgrounds__()
+
+        TUCRID.__download_sequences__(self.load_depth_data)
+
+    def __download_file__(filename, retries = 10):
+        attempts = 0
         while True:
             try:
-                item = next(self.__iterator__)
-                start_new_sequence = item['sequence_id'] != sequence_id and sequence_id is not None
-            except:
-                return
-
-            # new sequence
-            if start_new_sequence:
-                if self.depth_channel:
-                    images_rgb = torch.stack(self.__toTensor__(images_rgb))
-                    images_d = torch.stack(self.__toTensor__(images_d))
-                    X = torch.cat([images_rgb, images_d], dim=1)
+                hf_hub_download(
+                    repo_id=TUCRID.REPO_ID,
+                    repo_type='dataset',
+                    local_dir=TUCRID.CACHE_DIRECTORY,
+                    filename=filename
+                )
+                break
+            except Exception as e:
+                if attempts < retries:
+                    attempts += 1
                 else:
-                    images_rgb = torch.stack(self.__toTensor__(images_rgb))
-                    X = images_rgb
+                    raise e
 
-                if X.shape[0] > self.sequence_length:
-                    start_idx = np.random.randint(0, X.shape[0]-self.sequence_length)
-                    end_idx = start_idx + self.sequence_length
-                    X = X[start_idx:end_idx]
+    def __download_metadata__():
+        for phase in TUCRID.PHASES:
+            if not f'{phase}.json' in os.listdir(TUCRID.CACHE_DIRECTORY):
+                TUCRID.__download_file__(f'{phase}.json')
 
-                X = self.__stack__(self.transforms(X))
-                
-                action = int(sequence_id[1:4])
-                T = torch.zeros((self.num_actions))
-                T[action] = 1
+    def __download_backgrounds__():
+        # color
+        background_color_dir = TUCRID.BACKGROUND_DIRECTORY.joinpath('color')
+        if not background_color_dir.exists() or len(os.listdir(background_color_dir)) == 0:
+            TUCRID.__download_file__('background/color.tar.gz')
+            background_color_tarfile = TUCRID.BACKGROUND_DIRECTORY.joinpath('color.tar.gz')
+            with tarfile.open(background_color_tarfile, 'r:gz') as tar:
+                tar.extractall(background_color_dir)
+            os.remove(background_color_tarfile)
 
-                images_rgb = [item['image_rgb']]
-                images_d = [item['image_d']]
-                
-                yield X, T
+        # depth
+        background_depth_dir = TUCRID.BACKGROUND_DIRECTORY.joinpath('depth')
+        if not background_depth_dir.exists() or len(os.listdir(background_depth_dir)) == 0:
+            TUCRID.__download_file__('background/depth.tar.gz')
+            background_depth_tarfile = TUCRID.BACKGROUND_DIRECTORY.joinpath('depth.tar.gz')
+            with tarfile.open(background_depth_tarfile, 'r:gz') as tar:
+                tar.extractall(background_depth_dir)
+            os.remove(background_depth_tarfile)
+
+    def __download_sequences__(load_depth_data):
+        repo_files = [Path(file) for file in list_repo_files(TUCRID.REPO_ID, repo_type='dataset')]
+        
+        prog1 = tqdm(repo_files, leave=False)
+        for repo_file in prog1:
+            prog1.set_description(f'Downloading {repo_file}')
+            
+            # color
+            if repo_file.parent.name == 'color':
+                seq_dir = TUCRID.COLOR_DIRECTORY.joinpath(repo_file.stem.replace('.tar', ''))
+                if seq_dir.exists() and len(os.listdir(seq_dir)) > 0:
+                    continue
+                TUCRID.__download_file__(str(repo_file))
+                tar_file = TUCRID.COLOR_DIRECTORY.joinpath(repo_file.name)
+                with tarfile.open(tar_file, 'r:gz') as tar:
+                    tar.extractall(seq_dir)
+                os.remove(tar_file)
+            
+            # depth
+            if load_depth_data:
+                if repo_file.parent.name == 'depth':
+                    seq_dir = TUCRID.DEPTH_DIRECTORY.joinpath(repo_file.stem.replace('.tar', ''))
+                    if seq_dir.exists() and len(os.listdir(seq_dir)) > 0:
+                        continue
+                    TUCRID.__download_file__(str(repo_file))
+                    tar_file = TUCRID.DEPTH_DIRECTORY.joinpath(repo_file.name)
+                    with tarfile.open(tar_file, 'r:gz') as tar:
+                        tar.extractall(seq_dir)
+                    os.remove(tar_file)
+
+    def __load__(self):
+        with open(TUCRID.CACHE_DIRECTORY.joinpath(f'{self.phase}.json'), 'r') as f:
+            self.sequences = json.load(f)
+
+    def load_backgrounds(load_depth_data:bool = True):
+        """
+        Loads the background images.
+
+        Parameters
+        ----------
+        load_depth_data : bool, default = True
+            If set to `True`, the depth images will be loaded as well.
+        """
+        bg_color_dir = TUCRID.BACKGROUND_DIRECTORY.joinpath('color')
+        bg_depth_dir = TUCRID.BACKGROUND_DIRECTORY.joinpath('depth')
+
+        if not bg_color_dir.exists() or len(os.listdir(bg_color_dir)) == 0:
+            TUCRID.__download_backgrounds__()
+        if load_depth_data and (not bg_depth_dir.exists() or len(os.listdir(bg_depth_dir)) == 0):
+            TUCRID.__download_backgrounds__()
+
+        bg_color_files = sorted(glob(f'{bg_color_dir}/*'))
+
+        backgrounds = []
+        for fname_color in bg_color_files:
+            fname_color = Path(fname_color)
+            bg_color = cv.imread(str(fname_color))
+
+            if load_depth_data:
+                fname_depth = TUCRID.BACKGROUND_DIRECTORY.joinpath('depth', fname_color.name.replace('_color', '_depth'))
+                bg_depth = cv.imread(str(fname_depth), cv.IMREAD_UNCHANGED)
+                backgrounds.append((bg_color, bg_depth))
             else:
-                images_rgb.append(item['image_rgb'])
-                images_d.append(item['image_d'])
-            sequence_id = item['sequence_id']
-            pass
+                backgrounds.append(bg_color)
+        return backgrounds
 
+#__example__ from rsp.ml.dataset import Kinetics
+#__example__ 
+#__example__ ds = Kinetics(split='train', type=400)
+#__example__
+#__example__ for X, T in ds:
+#__example__     print(X)
 class Kinetics(Dataset):
+    """
+    Dataset class for the Kinetics dataset.
+    """
     def __init__(
         self,
         split:str,
@@ -193,7 +553,6 @@ class Kinetics(Dataset):
 
         self.__download__()
         self.__annotations__, self.action_labels = self.__load_annotations_labels__()
-        #self.__labels__ = self.__get_labels__()
         self.__files__ = self.__list_files__()
 
     def __getitem__(self, index):

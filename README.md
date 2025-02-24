@@ -5,8 +5,26 @@ This project provides some usefull machine learning functionality.
 # Table of Contents
 
 - [1 dataset](#1-dataset)
-  - [1.1 TUC\_AR : torch.utils.data.dataset.IterableDataset](#11-tuc\_ar--torchutilsdatadatasetiterabledataset)
+  - [1.1 Kinetics : torch.utils.data.dataset.Dataset](#11-kinetics--torchutilsdatadatasetdataset)
     - [1.1.1 \_\_init\_\_](#111-\_\_init\_\_)
+  - [1.2 ReplaceBackground : rsp.ml.multi_transforms.multi_transforms.MultiTransform](#12-replacebackground--rspmlmulti_transformsmulti_transformsmultitransform)
+    - [1.2.1 \_\_call\_\_](#121-\_\_call\_\_)
+    - [1.2.2 \_\_init\_\_](#122-\_\_init\_\_)
+    - [1.2.3 change\_background](#123-change\_background)
+    - [1.2.4 hsv\_filter](#124-hsv\_filter)
+  - [1.3 ReplaceBackgroundRGB : ReplaceBackground](#13-replacebackgroundrgb--replacebackground)
+    - [1.3.1 \_\_call\_\_](#131-\_\_call\_\_)
+    - [1.3.2 \_\_init\_\_](#132-\_\_init\_\_)
+    - [1.3.3 change\_background](#133-change\_background)
+    - [1.3.4 hsv\_filter](#134-hsv\_filter)
+  - [1.4 ReplaceBackgroundRGBD : ReplaceBackground](#14-replacebackgroundrgbd--replacebackground)
+    - [1.4.1 \_\_call\_\_](#141-\_\_call\_\_)
+    - [1.4.2 \_\_init\_\_](#142-\_\_init\_\_)
+    - [1.4.3 change\_background](#143-change\_background)
+    - [1.4.4 hsv\_filter](#144-hsv\_filter)
+  - [1.5 TUCRID : torch.utils.data.dataset.Dataset](#15-tucrid--torchutilsdatadatasetdataset)
+    - [1.5.1 \_\_init\_\_](#151-\_\_init\_\_)
+    - [1.5.2 load\_backgrounds](#152-load\_backgrounds)
 - [2 metrics](#2-metrics)
   - [2.1 AUROC](#21-auroc)
   - [2.2 F1\_Score](#22-f1\_score)
@@ -129,48 +147,23 @@ This project provides some usefull machine learning functionality.
 
 
 
-## 1.1 TUC\_AR : torch.utils.data.dataset.IterableDataset
+## 1.1 Kinetics : torch.utils.data.dataset.Dataset
 
 [TOC](#table-of-contents)
 
 **Description**
 
-Small-scal action recognition dataset.
-
-Wrapper class for loading [SchulzR97/TUC-AR](https://huggingface.co/datasets/SchulzR97/TUC-AR) HuggingFace dataset as `torch.util.data.IterableDataset`.
-
-TUC-AR is a small scale action recognition dataset, containing 6(+1) action categories for human machine interaction. 
-
-**Facts**
-- RGB and depth input recorded by Intel RealSense D435 depth camera
-- 8 subjects
-- 11,031 sequences (train 8,893/ val 2,138)
-- 3 perspectives per scene
-- 6(+1) action classes<br>
-
-**Action Classes**
-| Action | Label    |
-|--------|----------|
-| A000   | None     |
-| A001   | Waving   |
-| A002   | Pointing |
-| A003   | Clapping |
-| A004   | Follow   |
-| A005   | Walking  |
-| A006   | Stop     |
+Dataset class for the Kinetics dataset.
 
 **Example**
 
 ```python
- from rsp.ml.dataset import TUC_AR
- 
- transforms = multi_transforms.Compose([multi_transforms.Resize((400, 400))])
- tuc_ar_ds = TUC_AR(
-               split='val',
-               depth_channel=True,
-               transforms=transforms,
-               num_actions=10,
-               streaming=True)
+from rsp.ml.dataset import Kinetics
+
+ds = Kinetics(split='train', type=400)
+
+for X, T in ds:
+    print(X)
 ```
 ### 1.1.1 \_\_init\_\_
 
@@ -185,11 +178,281 @@ Initializes a new instance.
 | Name | Type | Description |
 |------|------|-------------|
 | split | str | Dataset split [train|val] |
-| depth_channel | bool | Load depth channel. If set to `True`, the generated input tensor will have 4 channels instead of 3. (batch_size, sequence_length, __channels__, width, height) |
-| num_actions | int, default = 7 | Number of action classes -> shape[1] of target tensor (batch_size, **num_actions**) |
-| streaming | bool, default = False | If set to `True`, don't download the data files. Instead, it streams the data progressively while iterating on the dataset. |
-| sequence_length | int, default = 30 | Length of each sequence. -> shape[1] of the generated input tensor. (batch_size, **sequence_length**, channels, width, height) |
+| type | int, default = 400 | Type of the kineticts dataset. Currently only 400 is supported. |
+| frame_size | (int, int), default = (400, 400) | Size of the frames. The frames will be resized to this size. |
 | transforms | rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([]) | Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details. |
+| cache_dir | str, default = None | Directory to store the downloaded files. If set to `None`, the default cache directory will be used |
+| num_threads | int, default = 0 | Number of threads to use for downloading the files. |
+## 1.2 ReplaceBackground : rsp.ml.multi_transforms.multi_transforms.MultiTransform
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Transformation for background replacement based on HSV values. ReplaceBackground is an abstract class. Please inherit!
+
+**Example**
+
+```python
+from rsp.ml.dataset import ReplaceBackgroundRGB
+from rsp.ml.dataset import TUCRID
+
+backgrounds = TUCRID.load_backgrounds()
+```
+### 1.2.1 \_\_call\_\_
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Applies the transformation to the input data.
+
+### 1.2.2 \_\_init\_\_
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Initializes a new instance.
+
+### 1.2.3 change\_background
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Changes the background of the input image.
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| img | np.array | Input image |
+| bg | np.array | Background image |
+| mask | np.array | Mask |
+### 1.2.4 hsv\_filter
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Filters the input image based on HSV values.
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| img | np.array | Input image |
+| hmin | int | Minimum hue value |
+| hmax | int | Maximum hue value |
+| smin | int | Minimum saturation value |
+| smax | int | Maximum saturation value |
+| vmin | int | Minimum value value |
+| vmax | int | Maximum value value |
+| inverted | bool | Invert the mask |
+## 1.3 ReplaceBackgroundRGB : ReplaceBackground
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Transformation for background replacement based on HSV values. ReplaceBackgroundRGB is a concrete class for RGB images.
+
+
+### 1.3.1 \_\_call\_\_
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Applies the transformation to the input data.
+
+### 1.3.2 \_\_init\_\_
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Initializes a new instance.
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| backgrounds | List[np.array] | List of background images |
+| hsv_filter | List[tuple[int, int, int, int, int, int]] | List of HSV filters |
+| p | float, default = 1. | Probability of applying the transformation |
+### 1.3.3 change\_background
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Changes the background of the input image.
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| img | np.array | Input image |
+| bg | np.array | Background image |
+| mask | np.array | Mask |
+### 1.3.4 hsv\_filter
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Filters the input image based on HSV values.
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| img | np.array | Input image |
+| hmin | int | Minimum hue value |
+| hmax | int | Maximum hue value |
+| smin | int | Minimum saturation value |
+| smax | int | Maximum saturation value |
+| vmin | int | Minimum value value |
+| vmax | int | Maximum value value |
+| inverted | bool | Invert the mask |
+## 1.4 ReplaceBackgroundRGBD : ReplaceBackground
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Transformation for background replacement based on HSV values. ReplaceBackgroundRGBD is a concrete class for RGBD images.
+
+Parameters
+----------
+backgrounds : List[np.array]
+    List of background images
+hsv_filter : List[tuple[int, int, int, int, int, int]]
+    List of HSV filters
+p : float, default = 1.
+    Probability of applying the transformation
+rotate : float, default = 5
+    Maximum rotation angle
+max_scale : float, default = 2
+    Maximum scaling factor
+
+
+### 1.4.1 \_\_call\_\_
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Applies the transformation to the input data.
+
+### 1.4.2 \_\_init\_\_
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Initializes a new instance.
+
+### 1.4.3 change\_background
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Changes the background of the input image.
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| img | np.array | Input image |
+| bg | np.array | Background image |
+| mask | np.array | Mask |
+### 1.4.4 hsv\_filter
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Filters the input image based on HSV values.
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| img | np.array | Input image |
+| hmin | int | Minimum hue value |
+| hmax | int | Maximum hue value |
+| smin | int | Minimum saturation value |
+| smax | int | Maximum saturation value |
+| vmin | int | Minimum value value |
+| vmax | int | Maximum value value |
+| inverted | bool | Invert the mask |
+## 1.5 TUCRID : torch.utils.data.dataset.Dataset
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Dataset class for the Robot Interaction Dataset by University of Technology Chemnitz (TUCRID).
+
+**Example**
+
+```python
+from rsp.ml.dataset import TUCRID
+from rsp.ml.dataset import ReplaceBackgroundRGBD
+import rsp.ml.multi_transforms as multi_transforms
+import cv2 as cv
+
+backgrounds = TUCRID.load_backgrounds_color()
+transforms = multi_transforms.Compose([
+    ReplaceBackgroundRGBD(backgrounds),
+    multi_transforms.Stack()
+])
+
+ds = TUCRID('train', transforms=transforms)
+
+for X, T in ds:
+  for x in X.permute(0, 2, 3, 1):
+    img_color = x[:, :, :3].numpy()
+    img_depth = x[:, :, 3].numpy()
+
+    cv.imshow('color', img_color)
+    cv.imshow('depth', img_depth)
+
+    cv.waitKey(30)
+```
+### 1.5.1 \_\_init\_\_
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Initializes a new instance.
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| phase | str | Dataset phase [train|val] |
+| load_depth_data | bool, default = True | Load depth data |
+| sequence_length | int, default = 30 | Length of the sequences |
+| transforms | rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([]) | Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details. |
+### 1.5.2 load\_backgrounds
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Loads the background images.
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| load_depth_data | bool, default = True | If set to `True`, the depth images will be loaded as well. |
 # 2 metrics
 
 [TOC](#table-of-contents)
