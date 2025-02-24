@@ -302,6 +302,7 @@ class TUCRID(Dataset):
             phase:str,
             load_depth_data:bool = True,
             sequence_length:int = 30,
+            num_classes:int = 10,
             transforms:multi_transforms.Compose = multi_transforms.Compose([]),
             cache_dir:str = None
     ):
@@ -316,6 +317,8 @@ class TUCRID(Dataset):
             Load depth data
         sequence_length : int, default = 30
             Length of the sequences
+        num_classes : int, default = 10
+            Number of classes
         transforms : rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([])
             Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details.
         """
@@ -327,6 +330,7 @@ class TUCRID(Dataset):
         self.phase = phase
         self.load_depth_data = load_depth_data
         self.sequence_length = sequence_length
+        self.num_classes = num_classes
         self.transforms = transforms
 
         self.__download__()
@@ -371,7 +375,7 @@ class TUCRID(Dataset):
             X_depth = torch.tensor(np.array(depth_images), dtype=torch.float32).unsqueeze(3) / 255
             X = torch.cat([X, X_depth], dim=3)
         X = X.permute(0, 3, 1, 2)
-        T = torch.zeros((self.sequence_length), dtype=torch.float32)
+        T = torch.zeros((self.num_classes), dtype=torch.float32)
         T[action] = 1
 
         self.transforms.__reset__()
