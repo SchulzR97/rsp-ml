@@ -18,10 +18,29 @@ except Exception as e:
     print(e)
 
 class Run():
+    """
+    Run class to store and manage training
+    """
     def __init__(self, id = None, moving_average_epochs = 1, metrics = None, device:str = None):
+        """
+        Run class to store and manage training
+
+        Parameters:
+        ----------
+        id : str, default = None
+            Id of the run. If None, a new id is generated
+        moving_average_epochs : int, default = 1
+            Number of epochs to average over
+        metrics : list, default = None
+            List of metrics to compute. Each metric should be a function that takes Y and T as input.
+        device : str, default = None
+            torch device to run on
+        """
         if id is None:
             self.id = datetime.now().strftime('%Y%m%d%H%M%S%f')
-            self.data = {}
+            self.data = {
+                'start_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+            }
         else:
             self.id = id
 
@@ -41,7 +60,19 @@ class Run():
         self.__init_run_dir__()
         self.__load__()
     
-    def append(self, key:str, phase:str, value):
+    def append(self, key:str, phase:str, value:float):
+        """
+        Append value to key in phase.
+
+        Parameters:
+        ----------
+        key : str
+            Key to append to
+        phase : str
+            Phase to append to
+        value : float
+            Value to append
+        """
         mavg_epochs = self.moving_average_epochs if self.moving_average_epochs > 0 else 1
         if not key in self.data:
             self.data[key] = {}
@@ -60,9 +91,14 @@ class Run():
         self.data[key][phase]['avg'].append(np.average(self.data[key][phase]['val'][-mavg_epochs:]))
 
     def plot(self):
+        """
+        Plot all keys to runs/{id}/plot/{key}.jpg
+        """
         self.__init_run_dir__()
 
         for key in self.data:
+            if key == 'start_time':
+                continue
             key_str = key.replace('_', ' ')
             plot_file = self.directory_plot.joinpath(f'{key}.jpg')
 
@@ -72,12 +108,16 @@ class Run():
             for i, phase in enumerate(self.data[key]):
                 if len(self.data[key][phase]['val']) == 0:
                     continue
-                plt.plot(self.data[key][phase]['val'], color=colors[i], alpha=0.3)
-                plt.plot(self.data[key][phase]['avg'], label=phase, color=colors[i])
+                plt.plot(self.data[key][phase]['val'], color=colors[i], alpha=0.3 if key != 'time' else 1)
+                if key != 'time':
+                    plt.plot(self.data[key][phase]['avg'], label=phase, color=colors[i])
 
             plt.title(key_str)
             plt.xlabel('episode')
-            plt.ylabel(key_str)
+            if key == 'time':
+                plt.ylabel(f'{key_str} [h]')
+            else:
+                plt.ylabel(key_str)
             plt.minorticks_on()
             plt.grid(which='minor', color='lightgray', linewidth=0.2)
             plt.grid(which='major', linewidth=.6)
@@ -86,8 +126,13 @@ class Run():
             plt.close()
 
     def recalculate_moving_average(self):
+        """
+        Recalculate moving average
+        """
         mavg_epochs = self.moving_average_epochs if self.moving_average_epochs > 0 else 1
         for key in self.data:
+            if key == 'start_time':
+                continue
             for phase in self.data[key]:
                 for i in range(len(self.data[key][phase]['val'])):
                     s_i = 0 if i + 1 - mavg_epochs < 0 else i + 1 - mavg_epochs
@@ -105,6 +150,29 @@ class Run():
             num_batches:int = None,
             return_YT:bool = False
         ):
+        """
+        Train one epoch.
+
+        Parameters:
+        ----------
+        dataloader : DataLoader
+            DataLoader to train on
+        model : torch.nn.Module
+            Model to train
+        optimizer : torch.optim.Optimizer
+            Optimizer to use
+        criterion : torch.nn.Module
+            Criterion to use
+        num_batches : int, default = None
+            Number of batches to train on. If None, train on all batches
+        return_YT : bool, default = False
+            Append Y and T to results
+        
+        Returns:
+        -------
+        results : dict
+            Dictionary with results
+        """
         results = self.__compute__(
             model = model,
             optimizer = optimizer,
@@ -129,6 +197,29 @@ class Run():
             num_batches:int = None,
             return_YT:bool = False
         ):
+        """
+        Validate one epoch.
+
+        Parameters:
+        ----------
+        dataloader : DataLoader
+            DataLoader to validate on
+        model : torch.nn.Module
+            Model to validate
+        optimizer : torch.optim.Optimizer
+            Optimizer to use
+        criterion : torch.nn.Module
+            Criterion to use
+        num_batches : int, default = None
+            Number of batches to validate on. If None, validate on all batches
+        return_YT : bool, default = False
+            Append Y and T to results
+
+        Returns:
+        -------
+        results : dict
+            Dictionary with results
+        """
         results = self.__compute__(
             model = model,
             optimizer = optimizer,
@@ -154,6 +245,7 @@ class Run():
             train:bool,
             return_XYT:bool = False
         ):
+        start = datetime.now()
         iterator = iter(dataloader)
         if num_batches is None or hasattr(dataloader.dataset, 'len') and num_batches > len(dataloader):
             num_batches = len(dataloader)
@@ -212,23 +304,66 @@ class Run():
                 results[key] = torch.cat(results[key], dim=0)
             else:
                 results[key] = np.average(results[key])
+        
+        results['time'] = (datetime.now() - datetime.strptime(self.data['start_time'], '%Y-%m-%d %H:%M:%S.%f')).total_seconds() / 3600
+        results['time_per_sample'] = (datetime.now() - start).total_seconds() / len(dataloader.dataset) / dataloader.batch_size
+
+        self.epoch = self.len()
 
         return results
 
     def save(self):
+        """
+        Save data to runs/{id}/data.json
+        """
         self.__init_run_dir__()
         with open(f'runs/{self.id}/data.json', 'w') as f:
             json.dump(self.data, f)
 
     def get_val(self, key:str, phase:str):
+        """
+        Get last value of key in phase
+
+        Parameters:
+        ----------
+        key : str
+            Key to get
+        phase : str
+            Phase to get from
+        
+        Returns:
+        -------
+        value : float
+            Last value of key in phase
+        """
         return self.data[key][phase]['val'][-1]
     
     def get_avg(self, key:str, phase:str):
+        """
+        Get last average value of key in phase
+
+        Parameters:
+        ----------
+        key : str
+            Key to get
+        phase : str
+            Phase to get from
+        
+        Returns:
+        -------
+        value : float
+            Last average value of key in phase
+        """
         return self.data[key][phase]['avg'][-1]
     
     def len(self):
+        """
+        Get length of longest phase
+        """
         l = 0
         for key in self.data:
+            if key == 'start_time':
+                continue
             for phase in self.data[key]:
                 l_temp = len(self.data[key][phase]['val'])
                 if l_temp > l:
@@ -252,6 +387,8 @@ class Run():
             self.data = json.load(self.file_data.open('r'))
         else:
             self.data = {}
+            self.data['start_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+        self.epoch = self.len()
 
     def __best_state_dict__(self, fname:str, id:str, suffix:str):
         sd_files = glob(f'{self.directory}/*{id}*{suffix}')
@@ -267,6 +404,16 @@ class Run():
         return best_acc
 
     def save_state_dict(self, state_dict, fname = 'state_dict.pt'):
+        """
+        Save state_dict to runs/{id}/{fname}
+
+        Parameters:
+        ----------
+        state_dict : dict
+            State dict to save
+        fname : str, default = 'state_dict.pt'
+            Filename to save to
+        """
         self.__init_run_dir__()
         sd = copy.deepcopy(state_dict)
         for k, v in sd.items():
@@ -278,6 +425,20 @@ class Run():
             torch.save(sd, f)
 
     def save_best_state_dict(self, state_dict, new_acc:float, epoch = None, fname = 'state_dict.pt'):
+        """
+        Save state_dict if new_acc is better than previous best
+
+        Parameters:
+        ----------
+        state_dict : dict
+            State dict to save
+        new_acc : float
+            New accuracy
+        epoch : int, default = None
+            Epoch to save
+        fname : str, default = 'state_dict.pt'
+            Filename to save to
+        """
         file_state_dict = self.directory.joinpath(fname)
         suffix = file_state_dict.suffix
         id = file_state_dict.name[:-len(suffix)]
@@ -290,6 +451,16 @@ class Run():
             self.save_state_dict(state_dict, fname)
 
     def load_state_dict(self, model:torch.nn.Module, fname = None):
+        """
+        Load state_dict from runs/{id}/{fname}
+
+        Parameters:
+        ----------
+        model : torch.nn.Module
+            Model to load state_dict into
+        fname : str, default = None
+            Filename to load from
+        """
         if fname is None:
             fname = 'state_dict.pt'
         file_state_dict = self.directory.joinpath(fname)
@@ -297,10 +468,23 @@ class Run():
             with file_state_dict.open('rb') as f:
                 model.load_state_dict(torch.load(f, weights_only = False))
         else:
-            console.warn(f'File runs/{self.id}/{fname} not found.')
+            try:
+                console.warn(f'File runs/{self.id}/{fname} not found.')
+            except:
+                print(f'File runs/{self.id}/{fname} not found.')
             return
         
     def load_best_state_dict(self, model:torch.nn.Module, fname = 'state_dict.pt'):
+        """
+        Load best state_dict from runs/{id}/{fname}
+
+        Parameters:
+        ----------
+        model : torch.nn.Module
+            Model to load state_dict into
+        fname : str, default = 'state_dict.pt'
+            Filename to load from
+        """
         file_state_dict = self.directory.joinpath(fname)
         suffix = file_state_dict.suffix
         id = file_state_dict.name[:-len(suffix)]
@@ -313,6 +497,16 @@ class Run():
             print(f'Loaded {best_file}')
 
     def pickle_dump(self, model:torch.nn.Module, fname = 'model.pkl'):
+        """
+        Pickle model to runs/{id}/{fname}
+
+        Parameters:
+        ----------
+        model : torch.nn.Module
+            Model to pickle
+        fname : str, default = 'model.pkl'
+            Filename to save to
+        """
         self.__init_run_dir__()
 
         file_pkl = self.directory.joinpath(fname)
@@ -320,16 +514,30 @@ class Run():
             pkl.dump(model, f)
 
     def pickle_load(self, fname = 'model.pkl'):
+        """
+        Load model from runs/{id}/{fname}
+
+        Parameters:
+        ----------
+        fname : str, default = 'model.pkl'
+            Filename to load from
+        """
         file_pkl = self.directory.joinpath(fname)
         if file_pkl.exists():
             with open(file_pkl, 'rb') as f:
                 model = pkl.load(f)
         else:
-            console.warn(f'File runs/{self.id}/{fname} not found.')
+            try:
+                console.warn(f'File runs/{self.id}/{fname} not found.')
+            except:
+                print(f'File runs/{self.id}/{fname} not found.')
             return
         return model
     
 if __name__ == '__main__':
+    t1 = datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S.%f')
+    test = datetime.strptime('2025-02-28 14:31:23.3234', '%Y-%m-%d %H:%M:%S.%f')
+
     run = Run('test')
     run.save_best_state_dict(torch.nn.Linear(10, 10).state_dict(), 0.919342, 80)
     run.save_best_state_dict(torch.nn.Linear(10, 10).state_dict(), 0.899342, 81)

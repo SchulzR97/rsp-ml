@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader
 NUM_EPOCHS = 100
 BATCH_SIZE = 32
 LEARNING_RATE = 1e-4
+BATCHES_PER_EPOCH = 100
 
 if __name__ == '__main__':
     transform = torchvision.transforms.ToTensor()
@@ -54,8 +55,8 @@ if __name__ == '__main__':
     run.load_best_state_dict(model)
 
     for epoch in range(NUM_EPOCHS):
-        results_train = run.train_epoch(dl_train, model, optimizer, criterion)
-        results_val = run.validate_epoch(dl_val, model, optimizer, criterion)
+        results_train = run.train_epoch(dl_train, model, optimizer, criterion, num_batches=BATCHES_PER_EPOCH)
+        results_val = run.validate_epoch(dl_val, model, optimizer, criterion, num_batches=BATCHES_PER_EPOCH)
 
         run.plot()
         run.save_best_state_dict(model.state_dict(), results_val[m.top_1_accuracy.__name__], epoch)

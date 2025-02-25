@@ -7,24 +7,9 @@ This project provides some usefull machine learning functionality.
 - [1 dataset](#1-dataset)
   - [1.1 Kinetics : torch.utils.data.dataset.Dataset](#11-kinetics--torchutilsdatadatasetdataset)
     - [1.1.1 \_\_init\_\_](#111-\_\_init\_\_)
-  - [1.2 ReplaceBackground : rsp.ml.multi_transforms.multi_transforms.MultiTransform](#12-replacebackground--rspmlmulti_transformsmulti_transformsmultitransform)
-    - [1.2.1 \_\_call\_\_](#121-\_\_call\_\_)
-    - [1.2.2 \_\_init\_\_](#122-\_\_init\_\_)
-    - [1.2.3 change\_background](#123-change\_background)
-    - [1.2.4 hsv\_filter](#124-hsv\_filter)
-  - [1.3 ReplaceBackgroundRGB : ReplaceBackground](#13-replacebackgroundrgb--replacebackground)
-    - [1.3.1 \_\_call\_\_](#131-\_\_call\_\_)
-    - [1.3.2 \_\_init\_\_](#132-\_\_init\_\_)
-    - [1.3.3 change\_background](#133-change\_background)
-    - [1.3.4 hsv\_filter](#134-hsv\_filter)
-  - [1.4 ReplaceBackgroundRGBD : ReplaceBackground](#14-replacebackgroundrgbd--replacebackground)
-    - [1.4.1 \_\_call\_\_](#141-\_\_call\_\_)
-    - [1.4.2 \_\_init\_\_](#142-\_\_init\_\_)
-    - [1.4.3 change\_background](#143-change\_background)
-    - [1.4.4 hsv\_filter](#144-hsv\_filter)
-  - [1.5 TUCRID : torch.utils.data.dataset.Dataset](#15-tucrid--torchutilsdatadatasetdataset)
-    - [1.5.1 \_\_init\_\_](#151-\_\_init\_\_)
-    - [1.5.2 load\_backgrounds](#152-load\_backgrounds)
+  - [1.2 TUCRID : torch.utils.data.dataset.Dataset](#12-tucrid--torchutilsdatadatasetdataset)
+    - [1.2.1 \_\_init\_\_](#121-\_\_init\_\_)
+    - [1.2.2 load\_backgrounds](#122-load\_backgrounds)
 - [2 metrics](#2-metrics)
   - [2.1 AUROC](#21-auroc)
   - [2.2 F1\_Score](#22-f1\_score)
@@ -92,33 +77,36 @@ This project provides some usefull machine learning functionality.
   - [4.13 RandomVerticalFlip : MultiTransform](#413-randomverticalflip--multitransform)
     - [4.13.1 \_\_call\_\_](#4131-\_\_call\_\_)
     - [4.13.2 \_\_init\_\_](#4132-\_\_init\_\_)
-  - [4.14 Resize : MultiTransform](#414-resize--multitransform)
+  - [4.14 ReplaceBackground : MultiTransform](#414-replacebackground--multitransform)
     - [4.14.1 \_\_call\_\_](#4141-\_\_call\_\_)
     - [4.14.2 \_\_init\_\_](#4142-\_\_init\_\_)
-  - [4.15 Rotate : MultiTransform](#415-rotate--multitransform)
+  - [4.15 Resize : MultiTransform](#415-resize--multitransform)
     - [4.15.1 \_\_call\_\_](#4151-\_\_call\_\_)
     - [4.15.2 \_\_init\_\_](#4152-\_\_init\_\_)
-  - [4.16 Satturation : MultiTransform](#416-satturation--multitransform)
+  - [4.16 Rotate : MultiTransform](#416-rotate--multitransform)
     - [4.16.1 \_\_call\_\_](#4161-\_\_call\_\_)
     - [4.16.2 \_\_init\_\_](#4162-\_\_init\_\_)
-  - [4.17 Scale : MultiTransform](#417-scale--multitransform)
+  - [4.17 Satturation : MultiTransform](#417-satturation--multitransform)
     - [4.17.1 \_\_call\_\_](#4171-\_\_call\_\_)
     - [4.17.2 \_\_init\_\_](#4172-\_\_init\_\_)
-  - [4.18 Stack : MultiTransform](#418-stack--multitransform)
+  - [4.18 Scale : MultiTransform](#418-scale--multitransform)
     - [4.18.1 \_\_call\_\_](#4181-\_\_call\_\_)
     - [4.18.2 \_\_init\_\_](#4182-\_\_init\_\_)
-  - [4.19 ToCVImage : MultiTransform](#419-tocvimage--multitransform)
+  - [4.19 Stack : MultiTransform](#419-stack--multitransform)
     - [4.19.1 \_\_call\_\_](#4191-\_\_call\_\_)
     - [4.19.2 \_\_init\_\_](#4192-\_\_init\_\_)
-  - [4.20 ToNumpy : MultiTransform](#420-tonumpy--multitransform)
+  - [4.20 ToCVImage : MultiTransform](#420-tocvimage--multitransform)
     - [4.20.1 \_\_call\_\_](#4201-\_\_call\_\_)
     - [4.20.2 \_\_init\_\_](#4202-\_\_init\_\_)
-  - [4.21 ToPILImage : MultiTransform](#421-topilimage--multitransform)
+  - [4.21 ToNumpy : MultiTransform](#421-tonumpy--multitransform)
     - [4.21.1 \_\_call\_\_](#4211-\_\_call\_\_)
     - [4.21.2 \_\_init\_\_](#4212-\_\_init\_\_)
-  - [4.22 ToTensor : MultiTransform](#422-totensor--multitransform)
+  - [4.22 ToPILImage : MultiTransform](#422-topilimage--multitransform)
     - [4.22.1 \_\_call\_\_](#4221-\_\_call\_\_)
     - [4.22.2 \_\_init\_\_](#4222-\_\_init\_\_)
+  - [4.23 ToTensor : MultiTransform](#423-totensor--multitransform)
+    - [4.23.1 \_\_call\_\_](#4231-\_\_call\_\_)
+    - [4.23.2 \_\_init\_\_](#4232-\_\_init\_\_)
 - [5 run](#5-run)
   - [5.1 Run : builtins.object](#51-run--builtinsobject)
     - [5.1.1 \_\_init\_\_](#511-\_\_init\_\_)
@@ -183,214 +171,7 @@ Initializes a new instance.
 | transforms | rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([]) | Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details. |
 | cache_dir | str, default = None | Directory to store the downloaded files. If set to `None`, the default cache directory will be used |
 | num_threads | int, default = 0 | Number of threads to use for downloading the files. |
-## 1.2 ReplaceBackground : rsp.ml.multi_transforms.multi_transforms.MultiTransform
-
-[TOC](#table-of-contents)
-
-**Description**
-
-Transformation for background replacement based on HSV values. ReplaceBackground is an abstract class. Please inherit!
-
-**Example**
-
-```python
-from rsp.ml.dataset import ReplaceBackgroundRGB
-from rsp.ml.dataset import TUCRID
-
-backgrounds = TUCRID.load_backgrounds()
-```
-### 1.2.1 \_\_call\_\_
-
-[TOC](#table-of-contents)
-
-**Description**
-
-Applies the transformation to the input data.
-
-### 1.2.2 \_\_init\_\_
-
-[TOC](#table-of-contents)
-
-**Description**
-
-Initializes a new instance.
-
-### 1.2.3 change\_background
-
-[TOC](#table-of-contents)
-
-**Description**
-
-Changes the background of the input image.
-
-**Parameters**
-
-| Name | Type | Description |
-|------|------|-------------|
-| img | np.array | Input image |
-| bg | np.array | Background image |
-| mask | np.array | Mask |
-### 1.2.4 hsv\_filter
-
-[TOC](#table-of-contents)
-
-**Description**
-
-Filters the input image based on HSV values.
-
-**Parameters**
-
-| Name | Type | Description |
-|------|------|-------------|
-| img | np.array | Input image |
-| hmin | int | Minimum hue value |
-| hmax | int | Maximum hue value |
-| smin | int | Minimum saturation value |
-| smax | int | Maximum saturation value |
-| vmin | int | Minimum value value |
-| vmax | int | Maximum value value |
-| inverted | bool | Invert the mask |
-## 1.3 ReplaceBackgroundRGB : ReplaceBackground
-
-[TOC](#table-of-contents)
-
-**Description**
-
-Transformation for background replacement based on HSV values. ReplaceBackgroundRGB is a concrete class for RGB images.
-
-
-### 1.3.1 \_\_call\_\_
-
-[TOC](#table-of-contents)
-
-**Description**
-
-Applies the transformation to the input data.
-
-### 1.3.2 \_\_init\_\_
-
-[TOC](#table-of-contents)
-
-**Description**
-
-Initializes a new instance.
-
-**Parameters**
-
-| Name | Type | Description |
-|------|------|-------------|
-| backgrounds | List[np.array] | List of background images |
-| hsv_filter | List[tuple[int, int, int, int, int, int]] | List of HSV filters |
-| p | float, default = 1. | Probability of applying the transformation |
-### 1.3.3 change\_background
-
-[TOC](#table-of-contents)
-
-**Description**
-
-Changes the background of the input image.
-
-**Parameters**
-
-| Name | Type | Description |
-|------|------|-------------|
-| img | np.array | Input image |
-| bg | np.array | Background image |
-| mask | np.array | Mask |
-### 1.3.4 hsv\_filter
-
-[TOC](#table-of-contents)
-
-**Description**
-
-Filters the input image based on HSV values.
-
-**Parameters**
-
-| Name | Type | Description |
-|------|------|-------------|
-| img | np.array | Input image |
-| hmin | int | Minimum hue value |
-| hmax | int | Maximum hue value |
-| smin | int | Minimum saturation value |
-| smax | int | Maximum saturation value |
-| vmin | int | Minimum value value |
-| vmax | int | Maximum value value |
-| inverted | bool | Invert the mask |
-## 1.4 ReplaceBackgroundRGBD : ReplaceBackground
-
-[TOC](#table-of-contents)
-
-**Description**
-
-Transformation for background replacement based on HSV values. ReplaceBackgroundRGBD is a concrete class for RGBD images.
-
-Parameters
-----------
-backgrounds : List[np.array]
-    List of background images
-hsv_filter : List[tuple[int, int, int, int, int, int]]
-    List of HSV filters
-p : float, default = 1.
-    Probability of applying the transformation
-rotate : float, default = 5
-    Maximum rotation angle
-max_scale : float, default = 2
-    Maximum scaling factor
-
-
-### 1.4.1 \_\_call\_\_
-
-[TOC](#table-of-contents)
-
-**Description**
-
-Applies the transformation to the input data.
-
-### 1.4.2 \_\_init\_\_
-
-[TOC](#table-of-contents)
-
-**Description**
-
-Initializes a new instance.
-
-### 1.4.3 change\_background
-
-[TOC](#table-of-contents)
-
-**Description**
-
-Changes the background of the input image.
-
-**Parameters**
-
-| Name | Type | Description |
-|------|------|-------------|
-| img | np.array | Input image |
-| bg | np.array | Background image |
-| mask | np.array | Mask |
-### 1.4.4 hsv\_filter
-
-[TOC](#table-of-contents)
-
-**Description**
-
-Filters the input image based on HSV values.
-
-**Parameters**
-
-| Name | Type | Description |
-|------|------|-------------|
-| img | np.array | Input image |
-| hmin | int | Minimum hue value |
-| hmax | int | Maximum hue value |
-| smin | int | Minimum saturation value |
-| smax | int | Maximum saturation value |
-| vmin | int | Minimum value value |
-| vmax | int | Maximum value value |
-| inverted | bool | Invert the mask |
-## 1.5 TUCRID : torch.utils.data.dataset.Dataset
+## 1.2 TUCRID : torch.utils.data.dataset.Dataset
 
 [TOC](#table-of-contents)
 
@@ -424,7 +205,7 @@ for X, T in ds:
 
     cv.waitKey(30)
 ```
-### 1.5.1 \_\_init\_\_
+### 1.2.1 \_\_init\_\_
 
 [TOC](#table-of-contents)
 
@@ -439,8 +220,9 @@ Initializes a new instance.
 | phase | str | Dataset phase [train|val] |
 | load_depth_data | bool, default = True | Load depth data |
 | sequence_length | int, default = 30 | Length of the sequences |
+| num_classes | int, default = 10 | Number of classes |
 | transforms | rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([]) | Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details. |
-### 1.5.2 load\_backgrounds
+### 1.2.2 load\_backgrounds
 
 [TOC](#table-of-contents)
 
@@ -1930,17 +1712,52 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 4.14 Resize : MultiTransform
+## 4.14 ReplaceBackground : MultiTransform
 
 [TOC](#table-of-contents)
 
 **Description**
 
-MultiTransform is an extension to keep the same transformation over a sequence of images instead of initializing a new transformation for every single image. It is inspired by `torchvision.transforms` and could be used for video augmentation. Use `rsp.ml.multi_transforms.Compose`to combine multiple image sequence transformations.
+Transformation for background replacement based on HSV values. Supports depth background replacement. backgrounds have to be passed as list of tuples of rgb and depth images.
 
-> **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
+Parameters
+----------
+backgrounds : List[np.array]
+    List of background images
+hsv_filter : List[tuple[int, int, int, int, int, int]]
+    List of HSV filters
+p : float, default = 1.
+    Probability of applying the transformation
+rotate : float, default = 5
+    Maximum rotation angle
+max_scale : float, default = 2
+    Maximum scaling factor
 
+**Example**
 
+```python
+from rsp.nl.dataset import TUCRID
+import rsp.ml.multi_transforms as multi_transforms
+
+USE_DEPTH_DATA = False
+backgrounds = TUCRID.load_backgrounds(USE_DEPTH_DATA)
+tranforms_train = multi_transforms.Compose([
+    multi_transforms.ReplaceBackground(
+        backgrounds = backgrounds,
+        hsv_filter=[(69, 87, 139, 255, 52, 255)],
+        p = 0.8
+    ),
+    multi_transforms.Stack()
+])
+tucrid = TUCRID('train', load_depth_data=USE_DEPTH_DATA, transforms=tranforms_train)
+
+for X, T in tucrid:
+    for x in X:
+        img = x.permute(1, 2, 0).numpy()
+
+        cv.imshow('img', img)
+        cv.waitKey(30)
+```
 ### 4.14.1 \_\_call\_\_
 
 [TOC](#table-of-contents)
@@ -1962,19 +1779,15 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 4.15 Rotate : MultiTransform
+## 4.15 Resize : MultiTransform
 
 [TOC](#table-of-contents)
 
 **Description**
 
-Randomly rotates images.
+MultiTransform is an extension to keep the same transformation over a sequence of images instead of initializing a new transformation for every single image. It is inspired by `torchvision.transforms` and could be used for video augmentation. Use `rsp.ml.multi_transforms.Compose`to combine multiple image sequence transformations.
 
-**Equations**
-
-$angle = -max\_angle + 2 \cdot random() \cdot max\_angle$
-
-![](documentation/image/multi_transforms.Rotate.png)
+> **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
 
 
 ### 4.15.1 \_\_call\_\_
@@ -1996,23 +1809,21 @@ Call self as a function.
 
 **Description**
 
-Iitializes a new instance.
+Initializes a new instance.
 
-**Parameters**
-
-| Name | Type | Description |
-|------|------|-------------|
-| max_angle | float | Maximal rotation in degrees | -max_angle <= rotate <= max_angle |
-| auto_scale | bool, default = True | Image will be resized when auto scale is activated to avoid black margins. |
-## 4.16 Satturation : MultiTransform
+## 4.16 Rotate : MultiTransform
 
 [TOC](#table-of-contents)
 
 **Description**
 
-MultiTransform is an extension to keep the same transformation over a sequence of images instead of initializing a new transformation for every single image. It is inspired by `torchvision.transforms` and could be used for video augmentation. Use `rsp.ml.multi_transforms.Compose`to combine multiple image sequence transformations.
+Randomly rotates images.
 
-> **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
+**Equations**
+
+$angle = -max\_angle + 2 \cdot random() \cdot max\_angle$
+
+![](documentation/image/multi_transforms.Rotate.png)
 
 
 ### 4.16.1 \_\_call\_\_
@@ -2034,9 +1845,15 @@ Call self as a function.
 
 **Description**
 
-Initializes a new instance.
+Iitializes a new instance.
 
-## 4.17 Scale : MultiTransform
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| max_angle | float | Maximal rotation in degrees | -max_angle <= rotate <= max_angle |
+| auto_scale | bool, default = True | Image will be resized when auto scale is activated to avoid black margins. |
+## 4.17 Satturation : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -2068,7 +1885,7 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 4.18 Stack : MultiTransform
+## 4.18 Scale : MultiTransform
 
 [TOC](#table-of-contents)
 
@@ -2100,13 +1917,15 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 4.19 ToCVImage : MultiTransform
+## 4.19 Stack : MultiTransform
 
 [TOC](#table-of-contents)
 
 **Description**
 
-Converts a `torch.Tensor`to Open CV image by changing dimensions (d0, d1, d2) -> (d1, d2, d0) and converting `torch.Tensor` to `numpy`.
+MultiTransform is an extension to keep the same transformation over a sequence of images instead of initializing a new transformation for every single image. It is inspired by `torchvision.transforms` and could be used for video augmentation. Use `rsp.ml.multi_transforms.Compose`to combine multiple image sequence transformations.
+
+> **Note** `rsp.ml.multi_transforms.MultiTransform` is a base class and should be inherited.
 
 
 ### 4.19.1 \_\_call\_\_
@@ -2130,13 +1949,13 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 4.20 ToNumpy : MultiTransform
+## 4.20 ToCVImage : MultiTransform
 
 [TOC](#table-of-contents)
 
 **Description**
 
-Converts a `torch.Tensor`to `numpy`
+Converts a `torch.Tensor`to Open CV image by changing dimensions (d0, d1, d2) -> (d1, d2, d0) and converting `torch.Tensor` to `numpy`.
 
 
 ### 4.20.1 \_\_call\_\_
@@ -2160,13 +1979,13 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 4.21 ToPILImage : MultiTransform
+## 4.21 ToNumpy : MultiTransform
 
 [TOC](#table-of-contents)
 
 **Description**
 
-Converts sequence of images to sequence of `PIL.Image`.
+Converts a `torch.Tensor`to `numpy`
 
 
 ### 4.21.1 \_\_call\_\_
@@ -2190,13 +2009,13 @@ Call self as a function.
 
 Initializes a new instance.
 
-## 4.22 ToTensor : MultiTransform
+## 4.22 ToPILImage : MultiTransform
 
 [TOC](#table-of-contents)
 
 **Description**
 
-Converts a sequence of images to torch.Tensor.
+Converts sequence of images to sequence of `PIL.Image`.
 
 
 ### 4.22.1 \_\_call\_\_
@@ -2220,6 +2039,36 @@ Call self as a function.
 
 Initializes a new instance.
 
+## 4.23 ToTensor : MultiTransform
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Converts a sequence of images to torch.Tensor.
+
+
+### 4.23.1 \_\_call\_\_
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Call self as a function.
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| input | torch.Tensor<br>List[PIL.Image]<br>List[numpy.array] | Sequence of images |
+### 4.23.2 \_\_init\_\_
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Initializes a new instance.
+
 # 5 run
 
 [TOC](#table-of-contents)
@@ -2230,6 +2079,10 @@ The module `rsp.ml.run` provides some tools for storing, loading and visualizing
 
 [TOC](#table-of-contents)
 
+**Description**
+
+Run class to store and manage training
+
 
 ### 5.1.1 \_\_init\_\_
 
@@ -2237,65 +2090,229 @@ The module `rsp.ml.run` provides some tools for storing, loading and visualizing
 
 **Description**
 
-Initialize self.  See help(type(self)) for accurate signature.
+Run class to store and manage training
 
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| id | str, default = None | Id of the run. If None, a new id is generated |
+| moving_average_epochs | int, default = 1 | Number of epochs to average over |
+| metrics | list, default = None | List of metrics to compute. Each metric should be a function that takes Y and T as input. |
+| device | str, default = None | torch device to run on |
 ### 5.1.2 append
 
 [TOC](#table-of-contents)
 
+**Description**
+
+Append value to key in phase.
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| key | str | Key to append to |
+| phase | str | Phase to append to |
+| value | float | Value to append |
 ### 5.1.3 get\_avg
 
 [TOC](#table-of-contents)
+
+**Description**
+
+Get last average value of key in phase
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| key | str | Key to get |
+| phase | str | Phase to get from |
+
+**Returns**
+
+Last average value of key in phase : value : float
 
 ### 5.1.4 get\_val
 
 [TOC](#table-of-contents)
 
+**Description**
+
+Get last value of key in phase
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| key | str | Key to get |
+| phase | str | Phase to get from |
+
+**Returns**
+
+Last value of key in phase : value : float
+
 ### 5.1.5 len
 
 [TOC](#table-of-contents)
+
+**Description**
+
+Get length of longest phase
 
 ### 5.1.6 load\_best\_state\_dict
 
 [TOC](#table-of-contents)
 
+**Description**
+
+Load best state_dict from runs/{id}/{fname}
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| model | torch.nn.Module | Model to load state_dict into |
+| fname | str, default = 'state_dict.pt' | Filename to load from |
 ### 5.1.7 load\_state\_dict
 
 [TOC](#table-of-contents)
 
+**Description**
+
+Load state_dict from runs/{id}/{fname}
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| model | torch.nn.Module | Model to load state_dict into |
+| fname | str, default = None | Filename to load from |
 ### 5.1.8 pickle\_dump
 
 [TOC](#table-of-contents)
 
+**Description**
+
+Pickle model to runs/{id}/{fname}
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| model | torch.nn.Module | Model to pickle |
+| fname | str, default = 'model.pkl' | Filename to save to |
 ### 5.1.9 pickle\_load
 
 [TOC](#table-of-contents)
 
+**Description**
+
+Load model from runs/{id}/{fname}
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| fname | str, default = 'model.pkl' | Filename to load from |
 ### 5.1.10 plot
 
 [TOC](#table-of-contents)
+
+**Description**
+
+Plot all keys to runs/{id}/plot/{key}.jpg
 
 ### 5.1.11 recalculate\_moving\_average
 
 [TOC](#table-of-contents)
 
+**Description**
+
+Recalculate moving average
+
 ### 5.1.12 save
 
 [TOC](#table-of-contents)
+
+**Description**
+
+Save data to runs/{id}/data.json
 
 ### 5.1.13 save\_best\_state\_dict
 
 [TOC](#table-of-contents)
 
+**Description**
+
+Save state_dict if new_acc is better than previous best
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| state_dict | dict | State dict to save |
+| new_acc | float | New accuracy |
+| epoch | int, default = None | Epoch to save |
+| fname | str, default = 'state_dict.pt' | Filename to save to |
 ### 5.1.14 save\_state\_dict
 
 [TOC](#table-of-contents)
 
+**Description**
+
+Save state_dict to runs/{id}/{fname}
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| state_dict | dict | State dict to save |
+| fname | str, default = 'state_dict.pt' | Filename to save to |
 ### 5.1.15 train\_epoch
 
 [TOC](#table-of-contents)
 
+**Description**
+
+Train one epoch.
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| dataloader | DataLoader | DataLoader to train on |
+| model | torch.nn.Module | Model to train |
+| optimizer | torch.optim.Optimizer | Optimizer to use |
+| criterion | torch.nn.Module | Criterion to use |
+| num_batches | int, default = None | Number of batches to train on. If None, train on all batches |
+| return_YT | bool, default = False | Append Y and T to results |
+
+**Returns**
+
+Dictionary with results : results : dict
+
 ### 5.1.16 validate\_epoch
 
 [TOC](#table-of-contents)
+
+**Description**
+
+Validate one epoch.
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| dataloader | DataLoader | DataLoader to validate on |
+| model | torch.nn.Module | Model to validate |
+| optimizer | torch.optim.Optimizer | Optimizer to use |
+| criterion | torch.nn.Module | Criterion to use |
+| num_batches | int, default = None | Number of batches to validate on. If None, validate on all batches |
+| return_YT | bool, default = False | Append Y and T to results |
+
+**Returns**
+
+Dictionary with results : results : dict
 
