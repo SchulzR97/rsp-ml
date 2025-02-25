@@ -209,7 +209,7 @@ class Run():
         
         for key in results:
             if key == 'X' or key == 'Y' or key == 'T':
-                results[key] = torch.stack(results[key])
+                results[key] = torch.cat(results[key], dim=0)
             else:
                 results[key] = np.average(results[key])
 
