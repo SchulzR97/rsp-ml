@@ -1,4 +1,5 @@
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
+from torch.utils.data.sampler import Sampler
 from pathlib import Path
 from platformdirs import user_cache_dir
 from tqdm import tqdm
@@ -18,6 +19,7 @@ import torch
 import rsp.ml.multi_transforms.multi_transforms as multi_transforms
 import time
 import pandas as pd
+
 try:
     import rsp.common.console as console
 except Exception as e:
@@ -226,6 +228,33 @@ class TUCRID(Dataset):
             self.sequences = pd.DataFrame(json.load(f))
 
         self.labels = self.sequences[['action', 'label']].drop_duplicates().sort_values('action')['label'].tolist()
+
+    def get_uniform_sampler(self):
+        groups = self.sequences.groupby('action')
+
+        action_counts = groups.size().to_numpy()
+        action_weights = 1. / (action_counts / action_counts.sum())
+        action_weights = action_weights / action_weights.sum()
+
+        for action, prob in enumerate(action_weights):
+            self.sequences.loc[self.sequences['action'] == action, 'sample_prob'] = prob
+
+        
+
+        class UniformSampler(Sampler):
+            def __init__(self, probs, len):
+                self.probs = probs
+                self.len = len
+
+            def __iter__(self):
+                indices = torch.tensor(self.probs).multinomial(self.len, replacement=True).tolist()
+                for idx in indices:
+                    yield idx
+
+            def __len__(self):
+                return self.len
+            
+        return UniformSampler(self.sequences['sample_prob'].to_numpy(), len(self.sequences))
 
     def load_backgrounds(load_depth_data:bool = True):
         """
@@ -493,7 +522,7 @@ class Kinetics(Dataset):
         return files
 
 if __name__ == '__main__':
-    USE_DEPTH_DATA = False
+    USE_DEPTH_DATA = True
     backgrounds = TUCRID.load_backgrounds(USE_DEPTH_DATA)
     tranforms_train = multi_transforms.Compose([
         multi_transforms.ReplaceBackground(
@@ -511,14 +540,25 @@ if __name__ == '__main__':
         multi_transforms.Rotate(max_angle=3),
         multi_transforms.Stack()
     ])
-    tucrid = TUCRID('train', load_depth_data=USE_DEPTH_DATA, transforms=tranforms_train)
+    tucrid_train = TUCRID('train', load_depth_data=USE_DEPTH_DATA, transforms=tranforms_train)
+    sampler_train = tucrid_train.get_uniform_sampler()
 
-    for X, T in tucrid:
-        for x in X:
-            img = x.permute(1, 2, 0).numpy()
+    dl_train = DataLoader(tucrid_train, batch_size=4, sampler=sampler_train)
 
-            cv.imshow('img', img)
-            cv.waitKey(30)
+    for X, T in dl_train:
+        for seq_X, seq_T in zip(X, T):
+            for x in seq_X:
+                img = x[0:3].permute(1, 2, 0).numpy()
+                img = np.array(img * 255, dtype=np.uint8)
+
+                if x.shape[0] == 4:
+                    img_depth = x[3].numpy()
+                    img_depth = cv.applyColorMap((img_depth * 255).astype(np.uint8), cv.COLORMAP_COOL)
+                    img = np.hstack([img, img_depth])
+
+                cv.imshow('img', img)
+                cv.waitKey(30)
+    pass
 
 
     k400 = Kinetics('train', num_threads=2, cache_dir='/Volumes/USB-Freigabe/KINETICS400')#cache_dir='/Volumes/ROBERT512GB/KINETICS400')
