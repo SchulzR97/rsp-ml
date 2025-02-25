@@ -1720,19 +1720,6 @@ Initializes a new instance.
 
 Transformation for background replacement based on HSV values. Supports depth background replacement. backgrounds have to be passed as list of tuples of rgb and depth images.
 
-Parameters
-----------
-backgrounds : List[np.array]
-    List of background images
-hsv_filter : List[tuple[int, int, int, int, int, int]]
-    List of HSV filters
-p : float, default = 1.
-    Probability of applying the transformation
-rotate : float, default = 5
-    Maximum rotation angle
-max_scale : float, default = 2
-    Maximum scaling factor
-
 **Example**
 
 ```python
@@ -1777,8 +1764,17 @@ Call self as a function.
 
 **Description**
 
-Initializes a new instance.
+Transformation for background replacement based on HSV values. Supports depth background replacement. backgrounds have to be passed as list of tuples of rgb and depth images.
 
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| backgrounds | List[np.array] | List of background images |
+| hsv_filter | List[tuple[int, int, int, int, int, int]] | List of HSV filters |
+| p | float, default = 1. | Probability of applying the transformation |
+| rotate | float, default = 5 | Maximum rotation angle |
+| max_scale | float, default = 2 | Maximum scaling factor |
 ## 4.15 Resize : MultiTransform
 
 [TOC](#table-of-contents)

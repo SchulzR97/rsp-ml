@@ -425,7 +425,7 @@ class Run():
         with file_state_dict.open('wb') as f:
             torch.save(sd, f)
 
-    def save_best_state_dict(self, state_dict, new_acc:float, epoch = None, fname = 'state_dict.pt'):
+    def save_best_state_dict(self, state_dict, new_acc:float, fname = 'state_dict.pt'):
         """
         Save state_dict if new_acc is better than previous best
 
@@ -447,8 +447,7 @@ class Run():
         best_acc, best_file = self.__best_state_dict__(fname, id, suffix)
 
         if new_acc > best_acc:
-            epoch_str = '' if epoch is None else f'_e{epoch}'
-            fname = f'{id}{epoch_str}_acc{new_acc:0.8f}{suffix}'
+            fname = f'{id}_e{self.epoch}_acc{new_acc:0.8f}{suffix}'
             self.save_state_dict(state_dict, fname)
 
     def load_state_dict(self, model:torch.nn.Module, fname = None):

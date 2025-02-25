@@ -143,20 +143,7 @@ class Normalize(MultiTransform):
 #__example__         cv.waitKey(30)
 class ReplaceBackground(MultiTransform):
     """
-    Transformation for background replacement based on HSV values. Supports depth background replacement. backgrounds have to be passed as list of tuples of rgb and depth images.
-
-    Parameters
-    ----------
-    backgrounds : List[np.array]
-        List of background images
-    hsv_filter : List[tuple[int, int, int, int, int, int]]
-        List of HSV filters
-    p : float, default = 1.
-        Probability of applying the transformation
-    rotate : float, default = 5
-        Maximum rotation angle
-    max_scale : float, default = 2
-        Maximum scaling factor
+        Transformation for background replacement based on HSV values. Supports depth background replacement. backgrounds have to be passed as list of tuples of rgb and depth images.
     """
     def __init__(
             self,
@@ -165,6 +152,22 @@ class ReplaceBackground(MultiTransform):
             p:float = 1.,
             rotate:float = 5,
             max_scale:float = 2):
+        """
+        Transformation for background replacement based on HSV values. Supports depth background replacement. backgrounds have to be passed as list of tuples of rgb and depth images.
+
+        Parameters
+        ----------
+        backgrounds : List[np.array]
+            List of background images
+        hsv_filter : List[tuple[int, int, int, int, int, int]]
+            List of HSV filters
+        p : float, default = 1.
+            Probability of applying the transformation
+        rotate : float, default = 5
+            Maximum rotation angle
+        max_scale : float, default = 2
+            Maximum scaling factor
+        """
         super().__init__()
         self.backgrounds = backgrounds
         self.hsv_filter = hsv_filter
