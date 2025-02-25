@@ -5,7 +5,6 @@ from typing import List
 import torch.nn.functional as F
 import cv2 as cv
 import numpy as np
-from rsp.ml.dataset import TUCRID
 
 class MultiTransform():
     """
@@ -1015,6 +1014,8 @@ class RandomVerticalFlip(MultiTransform):
         self.__should_flip__ = np.random.random() > 0.5
 
 if __name__ == '__main__':
+    from rsp.ml.dataset import TUCRID
+    
     USE_DEPTH_DATA = True
 
     backgrounds = TUCRID.load_backgrounds(USE_DEPTH_DATA)
@@ -1025,7 +1026,7 @@ if __name__ == '__main__':
             p = 0.8,
             rotate=0,
             max_scale=2,
-            max_noise=0.01
+            max_noise=0.002
         ),
         Resize((400, 400), auto_crop=False),
         Color(0.1, p = 0.2),
