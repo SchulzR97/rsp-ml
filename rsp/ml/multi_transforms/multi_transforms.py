@@ -5,6 +5,7 @@ from typing import List
 import torch.nn.functional as F
 import cv2 as cv
 import numpy as np
+from rsp.ml.dataset import TUCRID
 
 class MultiTransform():
     """
@@ -97,6 +98,7 @@ class Normalize(MultiTransform):
         self.normalize = torchvision.transforms.Normalize(mean, std, inplace)
         self.__toTensor__ = ToTensor()
         self.__toPILImage__ = ToPILImage()
+        self.__reset__()
 
     def __call__(self, inputs):
         is_tensor = isinstance(inputs[0], torch.Tensor)
@@ -151,7 +153,9 @@ class ReplaceBackground(MultiTransform):
             hsv_filter:List[tuple[int, int, int, int, int, int]] = [(69, 87, 139, 255, 52, 255)],
             p:float = 1.,
             rotate:float = 5,
-            max_scale:float = 2):
+            max_scale:float = 2,
+            max_noise:float = 0.002
+        ):
         """
         Transformation for background replacement based on HSV values. Supports depth background replacement. backgrounds have to be passed as list of tuples of rgb and depth images.
 
@@ -167,6 +171,8 @@ class ReplaceBackground(MultiTransform):
             Maximum rotation angle
         max_scale : float, default = 2
             Maximum scaling factor
+        max_noise : float, default = 0.002
+            Maximum noise level
         """
         super().__init__()
         self.backgrounds = backgrounds
@@ -177,12 +183,15 @@ class ReplaceBackground(MultiTransform):
         self.__toPILImage__ = ToPILImage()
         self.__toCVImage__ = ToCVImage()
 
-        self.transforms = Compose([
+        self.transforms:List[MultiTransform] = [
+            ToTensor(),
             Rotate(rotate),
             RandomCrop(max_scale = max_scale),
             RandomHorizontalFlip(),
-            RandomVerticalFlip()
-        ])
+            RandomVerticalFlip(),
+            GaussianNoise(max_noise_level=max_noise),
+            ToCVImage()
+        ]
 
     def __hsv_filter__(self, img, hmin, hmax, smin, smax, vmin, vmax, inverted):
         """
@@ -254,6 +263,26 @@ class ReplaceBackground(MultiTransform):
             if is_color_image:
                 self.__masks__ = []
 
+            # backgrounds
+            bg_color = np.asarray(self.__background__[0] / 255, dtype=np.float32)
+
+            bg_color = [bg_color]
+            for t in self.transforms:
+                bg_color = t(bg_color)
+            bg_color = bg_color[0]
+            bg = bg_color
+
+            if is_depth_image:
+                bg_depth = np.asarray(self.__background__[1] / 255, dtype=np.float32)
+                bg_depth = np.expand_dims(bg_depth, 2)
+                bg_depth = np.concatenate([bg_depth, bg_depth, bg_depth], axis = 2)
+
+                bg_depth = [bg_depth]
+                for t in self.transforms:
+                    bg_depth = t(bg_depth)
+                bg_depth = bg_depth[0][:,:, 0]
+                bg_depth = np.expand_dims(bg_depth, 2)
+
             results = []
             for i, input in enumerate(self.__toCVImage__(inputs)):
                 img = np.asarray(input * 255, dtype=np.uint8)
@@ -267,13 +296,8 @@ class ReplaceBackground(MultiTransform):
                     mask = cv.bitwise_and(mask, hsv_mask)
 
                 mask = np.asarray(mask, dtype=np.uint8)
-
-                bg_color = np.asarray(self.__background__[0] / 255, dtype=np.float32)
-                bg = bg_color
                 
                 if is_depth_image:
-                    bg_depth = np.asarray(self.__background__[1] / 255, dtype=np.float32)
-                    bg_depth = np.expand_dims(bg_depth, 2)
                     bg = np.concatenate([bg_color, bg_depth], axis = 2)
 
                 result = self.__change_background__(input, bg, mask)
@@ -281,6 +305,9 @@ class ReplaceBackground(MultiTransform):
                 results.append(result)
 
             results = self.__toTensor__(results)
+
+            for t in self.transforms:
+                t.__reset__()
 
             if not is_tensor:
                 results = self.__toPILImage__(results)
@@ -301,6 +328,7 @@ class ToTensor(MultiTransform):
         super().__init__()
 
         self.toTensor = torchvision.transforms.ToTensor()
+        self.__reset__()
 
     def __call__(self, images) -> List[torch.Tensor]:
         results = []
@@ -391,10 +419,10 @@ class RandomCrop(MultiTransform):
         self.__toTensor__ = ToTensor()
         self.__toPILImage__ = ToPILImage()
 
-        self.__reset__()
-
     def __call__(self, imgs):
         self.__get_size__(imgs)
+        if not hasattr(self, '__scale__'):
+            self.__reset__()
     
         results = []
 
@@ -459,7 +487,8 @@ class Rotate(MultiTransform):
 
     def __call__(self, imgs):
         self.__get_size__(imgs)
-        self.__reset__()
+        if not hasattr(self, '__angle__'):
+            self.__reset__()
     
         results = []
 
@@ -490,7 +519,6 @@ class Rotate(MultiTransform):
         self.__angle__ = -self.max_angle + 2 * np.random.random() * self.max_angle
 
         w, h = self.size[1], self.size[0]
-        t1 = np.sin(self.__angle__)
         new_w = w + np.abs(np.sin(self.__angle__ / 180 * np.pi) * w)
         new_h = h + np.abs(np.sin(self.__angle__ / 180 * np.pi) * h)
 
@@ -502,6 +530,8 @@ class ToNumpy(MultiTransform):
     """
     def __init__(self):
         super().__init__()
+
+        self.__reset__()
 
     def __call__(self, tensor:torch.Tensor):
         result = tensor.numpy()
@@ -518,6 +548,8 @@ class ToCVImage(MultiTransform):
         super().__init__()
 
         self.__toTensor__ = ToTensor()
+
+        self.__reset__()
 
     def __call__(self, inputs) -> List[np.array]:
         is_tensor = isinstance(inputs[0], torch.Tensor)
@@ -541,6 +573,8 @@ class ToPILImage(MultiTransform):
 
         self.__toPILImage__ = torchvision.transforms.ToPILImage()
 
+        self.__reset__()
+
     def __call__(self, tensor:torch.Tensor):
         results = []
         for img in tensor:
@@ -560,6 +594,8 @@ class BGR2RGB(MultiTransform):
 
         self.__toTensor__ = ToTensor()
         self.__toPILImage__ = ToPILImage()
+
+        self.__reset__()
 
     def __call__(self, inputs):
         is_tensor = isinstance(inputs[0], torch.Tensor)
@@ -596,9 +632,11 @@ class Scale(MultiTransform):
 
         self.__toCVImage__ = ToCVImage()
 
+        self.__reset__()
+
     def __call__(self, inputs):
         self.__get_size__(inputs)
-        self.__reset__()
+
         is_tensor = isinstance(inputs[0], torch.Tensor)
         if not is_tensor:
             inputs = self.__toTensor__(inputs)
@@ -630,9 +668,11 @@ class Resize(MultiTransform):
         self.target_size = target_size
         self.auto_crop = auto_crop
 
+        self.__reset__()
+
     def __call__(self, inputs):
         self.__get_size__(inputs)
-        self.__reset__()
+
         is_tensor = isinstance(inputs[0], torch.Tensor)
         if not is_tensor:
             inputs = self.__toTensor__(inputs)
@@ -676,11 +716,12 @@ class Brightness(MultiTransform):
 
         self.__toCVImage__ = ToCVImage()
 
+        self.__reset__()
+
     def __call__(self, inputs):
         assert inputs[0].shape[2] >= 3, f'Expected input channels >= 3 but got input[0].shape = {input[0].shape}'
 
         self.__get_size__(inputs)
-        self.__reset__()
         is_tensor = isinstance(inputs[0], torch.Tensor)
         if not is_tensor:
             inputs = self.__toTensor__(inputs)
@@ -723,11 +764,12 @@ class Satturation(MultiTransform):
 
         self.__toCVImage__ = ToCVImage()
 
+        self.__reset__()
+
     def __call__(self, inputs):
         assert inputs[0].shape[2] >= 3, f'Expected input channels >= 3 but got input[0].shape = {input[0].shape}'
 
         self.__get_size__(inputs)
-        self.__reset__()
         is_tensor = isinstance(inputs[0], torch.Tensor)
         if not is_tensor:
             inputs = self.__toTensor__(inputs)
@@ -772,6 +814,8 @@ class Color(MultiTransform):
 
         self.__toCVImage__ = ToCVImage()
 
+        self.__reset__()
+
     def __call__(self, inputs):
         is_tensor = isinstance(inputs[0], torch.Tensor)
         if is_tensor:
@@ -780,7 +824,6 @@ class Color(MultiTransform):
             assert inputs[0].mode in ['RGB', 'RGBA', 'CMYK'], f'Expected input channels >= 3 but got input[0].shape = {input[0].shape}'
         
         self.__get_size__(inputs)
-        self.__reset__()
         
         if not is_tensor:
             inputs = self.__toTensor__(inputs)
@@ -823,9 +866,10 @@ class GaussianNoise(MultiTransform):
 
         self.__toCVImage__ = ToCVImage()
 
+        self.__reset__()
+
     def __call__(self, inputs):
         self.__get_size__(inputs)
-        self.__reset__()
         is_tensor = isinstance(inputs[0], torch.Tensor)
         if not is_tensor:
             inputs = self.__toTensor__(inputs)
@@ -853,9 +897,10 @@ class Stack(MultiTransform):
         self.__toTensor__ = ToTensor()
         self.__toPILImage__ = ToPILImage()
 
+        self.__reset__()
+
     def __call__(self, inputs):
         self.__get_size__(inputs)
-        self.__reset__()
         is_tensor = isinstance(inputs[0], torch.Tensor)
         if not is_tensor:
             inputs = self.__toTensor__(inputs)
@@ -878,9 +923,10 @@ class BGR2GRAY(MultiTransform):
         self.__toCVImage__ = ToCVImage()
         self.__toPILImage__ = ToPILImage()
 
+        self.__reset__()
+
     def __call__(self, inputs):
         self.__get_size__(inputs)
-        self.__reset__()
         is_tensor = isinstance(inputs[0], torch.Tensor)
         if not is_tensor:
             inputs = self.__toTensor__(inputs)
@@ -908,9 +954,10 @@ class RandomHorizontalFlip(MultiTransform):
         self.__toCVImage__ = ToCVImage()
         self.__toPILImage__ = ToPILImage()
 
+        self.__reset__()
+
     def __call__(self, inputs):
         self.__get_size__(inputs)
-        self.__reset__()
         is_tensor = isinstance(inputs[0], torch.Tensor)
         if not is_tensor:
             inputs = self.__toTensor__(inputs)
@@ -941,9 +988,10 @@ class RandomVerticalFlip(MultiTransform):
         self.__toCVImage__ = ToCVImage()
         self.__toPILImage__ = ToPILImage()
 
+        self.__reset__()
+
     def __call__(self, inputs):
         self.__get_size__(inputs)
-        self.__reset__()
         is_tensor = isinstance(inputs[0], torch.Tensor)
         if not is_tensor:
             inputs = self.__toTensor__(inputs)
@@ -967,45 +1015,43 @@ class RandomVerticalFlip(MultiTransform):
         self.__should_flip__ = np.random.random() > 0.5
 
 if __name__ == '__main__':
-    transforms = Compose([
-        ToTensor(),
-        #RandomCrop(max_scale=1.1),
-        #Normalize(0, 1),
-        #Rotate(max_angle=5, auto_scale=True),
-        #Resize((500, 500)),
-        #RandomCrop(max_scale=1.05),
-        #Color(0.5, 1.5),
-        #BGR2GRAY(),
-        #Brightness(0.5, 1.5),
-        #GaussianNoise(0.0, 0.005),
-        #RGB2BGR(),
-        #Scale(0.5),
-        #BGR2RGB(),
-        #Stack(),
-        #RandomHorizontalFlip(),
-        BGR2GRAY(),
-        Rotate(10),
-        ToCVImage(),
+    USE_DEPTH_DATA = True
+
+    backgrounds = TUCRID.load_backgrounds(USE_DEPTH_DATA)
+    tranforms_train = Compose([
+        ReplaceBackground(
+            backgrounds = backgrounds,
+            hsv_filter=[(69, 87, 139, 255, 52, 255)],
+            p = 0.8,
+            rotate=0,
+            max_scale=2,
+            max_noise=0.01
+        ),
+        Resize((400, 400), auto_crop=False),
+        Color(0.1, p = 0.2),
+        Brightness(0.7, 1.3),
+        Satturation(0.7, 1.3),
+        RandomHorizontalFlip(),
+        GaussianNoise(0.002),
+        Rotate(max_angle=3),
+        Stack()
     ])
+    tucreid = TUCRID('train', load_depth_data=USE_DEPTH_DATA, transforms=tranforms_train)
 
-    #sequence_dir = f'/media/schulzr/ACA02F26A02EF70C/data/tuc-actionpredictiondataset/sequences/realsense/train'
-    sequence_dir = '/Users/schulzr/Documents/Datasets/tuc-actionpredictiondataset/sequences/realsense/train/A000C000S000SEQ000'
+    for X, T in tucreid:
+        for x in X:
+            img_color = x[0:3].permute(1, 2, 0).numpy()
+            img_depth = np.expand_dims(x[3].numpy(), 2)
+            #img_depth = np.concatenate([img_depth, img_depth, img_depth], axis = 2)
 
-    imgs = [
-        Image.open(f'{sequence_dir}/C000F00000_color.jpg'),
-        Image.open(f'{sequence_dir}/C000F00001_color.jpg'),
-        Image.open(f'{sequence_dir}/C000F00002_color.jpg'),
-        Image.open(f'{sequence_dir}/C000F00003_color.jpg'),
-        Image.open(f'{sequence_dir}/C000F00004_color.jpg'),
-        Image.open(f'{sequence_dir}/C000F00005_color.jpg'),
-        Image.open(f'{sequence_dir}/C000F00006_color.jpg'),
-    ]
+            img_color = np.array(img_color * 255, dtype=np.uint8)
+            img_depth = np.array(img_depth * 255, dtype=np.uint8)
 
-    for i in range(10):
-        results = transforms(imgs)
-        for img, result in zip(imgs, results):
-            cv.imshow('img', np.asarray(img))
-            cv.imshow('result', result)
-            print(result.shape)
+            img_depth = cv.applyColorMap(img_depth, cv.COLORMAP_JET)
+
+            img = np.hstack([img_color, img_depth])
+
+            cv.imshow('img', img)
             cv.waitKey()
+    
     pass

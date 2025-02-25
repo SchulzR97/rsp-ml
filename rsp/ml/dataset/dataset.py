@@ -100,10 +100,9 @@ class TUCRID(Dataset):
         return len(self.sequences)
     
     def __getitem__(self, idx):
-        sequence = self.sequences[idx]
-        id = sequence['id']
-        action = sequence['action']
-        link = sequence['link']
+        id = self.sequences['id'][idx]
+        action = self.sequences['action'][idx]
+        link = self.sequences['link'][idx]
 
         color_files = sorted(glob(f'{TUCRID.COLOR_DIRECTORY}/{link}/*.jpg'))
         assert len(color_files) >= self.sequence_length, f'Not enough frames for {id}.'
@@ -224,7 +223,9 @@ class TUCRID(Dataset):
 
     def __load__(self):
         with open(TUCRID.CACHE_DIRECTORY.joinpath(f'{self.phase}.json'), 'r') as f:
-            self.sequences = json.load(f)
+            self.sequences = pd.DataFrame(json.load(f))
+
+        self.labels = self.sequences[['action', 'label']].drop_duplicates().sort_values('action')['label'].tolist()
 
     def load_backgrounds(load_depth_data:bool = True):
         """
@@ -498,7 +499,8 @@ if __name__ == '__main__':
         multi_transforms.ReplaceBackground(
             backgrounds = backgrounds,
             hsv_filter=[(69, 87, 139, 255, 52, 255)],
-            p = 0.8
+            p = 0.8,
+            rotate=180
         ),
         multi_transforms.Resize((400, 400), auto_crop=False),
         multi_transforms.Color(0.1, p = 0.2),
