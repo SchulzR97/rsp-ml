@@ -121,7 +121,8 @@ class Run():
             plt.minorticks_on()
             plt.grid(which='minor', color='lightgray', linewidth=0.2)
             plt.grid(which='major', linewidth=.6)
-            plt.legend()
+            if key != 'time':
+                plt.legend()
             plt.savefig(plot_file)
             plt.close()
 
@@ -447,7 +448,7 @@ class Run():
 
         if new_acc > best_acc:
             epoch_str = '' if epoch is None else f'_e{epoch}'
-            fname = f'{id}{epoch_str}_acc{new_acc}{suffix}'
+            fname = f'{id}{epoch_str}_acc{new_acc:0.8f}{suffix}'
             self.save_state_dict(state_dict, fname)
 
     def load_state_dict(self, model:torch.nn.Module, fname = None):
