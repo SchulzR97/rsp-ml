@@ -203,9 +203,9 @@ class Run():
 
             results['loss'].append(loss.item())
             if return_XYT:
-                results['X'].append(X)
-                results['Y'].append(Y)
-                results['T'].append(T)
+                results['X'].append(X.detach())
+                results['Y'].append(Y.detach())
+                results['T'].append(T.detach())
         
         for key in results:
             if key == 'X' or key == 'Y' or key == 'T':
