@@ -1,16 +1,16 @@
-import os
 from datetime import datetime
-import torch
-import torch.nn as nn
 from torch.utils.data import DataLoader
+from glob import glob
+from pathlib import Path
+from tqdm import tqdm
 import numpy as np
 import json
 import matplotlib.pyplot as plt
 import pickle as pkl
 import copy
-from glob import glob
-from pathlib import Path
-from tqdm import tqdm
+import torch
+import torch.nn as nn
+import pandas as pd
 
 try:
     import rsp.common.console as console
@@ -21,7 +21,14 @@ class Run():
     """
     Run class to store and manage training
     """
-    def __init__(self, id = None, moving_average_epochs = 1, metrics = None, device:str = None):
+    def __init__(
+            self,
+            id = None,
+            moving_average_epochs = 1,
+            metrics = None,
+            device:str = None,
+            ignore_outliers_in_chart_scaling:bool = False
+        ):
         """
         Run class to store and manage training
 
@@ -35,6 +42,8 @@ class Run():
             List of metrics to compute. Each metric should be a function that takes Y and T as input.
         device : str, default = None
             torch device to run on
+        ignore_outliers_in_chart_scaling : bool, default = False
+            Ignore outliers when scaling charts
         """
         if id is None:
             self.id = datetime.now().strftime('%Y%m%d%H%M%S%f')
@@ -45,6 +54,7 @@ class Run():
             self.id = id
 
         self.metrics = metrics
+        self.ignore_outliers_in_chart_scaling = ignore_outliers_in_chart_scaling
 
         if device is None:
             if torch.cuda.is_available():
@@ -96,6 +106,15 @@ class Run():
         """
         self.__init_run_dir__()
 
+        def get_outlier_fence(data):
+            df = pd.DataFrame({'data': data})
+            q1 = df['data'].quantile(0.25)
+            q3 = df['data'].quantile(0.75)
+            iqr = q3 - q1
+            fence_low = q1 - 1. * iqr
+            fence_high = q3 + 1. * iqr
+            return fence_low, fence_high
+
         for key in self.data:
             if key == 'start_time':
                 continue
@@ -105,9 +124,17 @@ class Run():
             cmap = plt.get_cmap('tab20b')
             colors = cmap(np.linspace(0, 1, len(self.data[key])))
 
+            ymin, ymax = 0., 0.
             for i, phase in enumerate(self.data[key]):
                 if len(self.data[key][phase]['val']) == 0:
                     continue
+
+                if self.ignore_outliers_in_chart_scaling:
+                    val_fence = get_outlier_fence(self.data[key][phase]['val'])
+                    avg_fence = get_outlier_fence(self.data[key][phase]['avg'])
+                    ymin = min(ymin, min(val_fence[0], avg_fence[0]))
+                    ymax = max(ymax, max(val_fence[1], avg_fence[1]))
+
                 plt.plot(self.data[key][phase]['val'], color=colors[i], alpha=0.3 if key != 'time' else 1)
                 if key != 'time':
                     plt.plot(self.data[key][phase]['avg'], label=phase, color=colors[i])
@@ -118,6 +145,8 @@ class Run():
                 plt.ylabel(f'{key_str} [h]')
             else:
                 plt.ylabel(key_str)
+            if self.ignore_outliers_in_chart_scaling:
+                plt.ylim(ymin, ymax)
             plt.minorticks_on()
             plt.grid(which='minor', color='lightgray', linewidth=0.2)
             plt.grid(which='major', linewidth=.6)

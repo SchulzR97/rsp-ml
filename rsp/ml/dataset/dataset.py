@@ -197,7 +197,7 @@ class TUCRID(Dataset):
         repo_files = [Path(file) for file in list_repo_files(TUCRID.REPO_ID, repo_type='dataset')]
         color_files = [file for file in repo_files if file.parent.name == 'color']
 
-        prog = tqdm(color_files)
+        prog = tqdm(color_files, leave=False)
         for color_file in prog:
             prog.set_description(f'Downloading {color_file}')
             local_dir = TUCRID.COLOR_DIRECTORY.joinpath(color_file.name.replace('.tar.gz', ''))
@@ -238,8 +238,6 @@ class TUCRID(Dataset):
 
         for action, prob in enumerate(action_weights):
             self.sequences.loc[self.sequences['action'] == action, 'sample_prob'] = prob
-
-        
 
         class UniformSampler(Sampler):
             def __init__(self, probs, len):
