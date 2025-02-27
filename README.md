@@ -9,7 +9,8 @@ This project provides some usefull machine learning functionality.
     - [1.1.1 \_\_init\_\_](#111-\_\_init\_\_)
   - [1.2 TUCRID : torch.utils.data.dataset.Dataset](#12-tucrid--torchutilsdatadatasetdataset)
     - [1.2.1 \_\_init\_\_](#121-\_\_init\_\_)
-    - [1.2.2 load\_backgrounds](#122-load\_backgrounds)
+    - [1.2.2 get\_uniform\_sampler](#122-get\_uniform\_sampler)
+    - [1.2.3 load\_backgrounds](#123-load\_backgrounds)
 - [2 metrics](#2-metrics)
   - [2.1 AUROC](#21-auroc)
   - [2.2 F1\_Score](#22-f1\_score)
@@ -222,7 +223,11 @@ Initializes a new instance.
 | sequence_length | int, default = 30 | Length of the sequences |
 | num_classes | int, default = 10 | Number of classes |
 | transforms | rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([]) | Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details. |
-### 1.2.2 load\_backgrounds
+### 1.2.2 get\_uniform\_sampler
+
+[TOC](#table-of-contents)
+
+### 1.2.3 load\_backgrounds
 
 [TOC](#table-of-contents)
 
@@ -1775,6 +1780,7 @@ Transformation for background replacement based on HSV values. Supports depth ba
 | p | float, default = 1. | Probability of applying the transformation |
 | rotate | float, default = 5 | Maximum rotation angle |
 | max_scale | float, default = 2 | Maximum scaling factor |
+| max_noise | float, default = 0.002 | Maximum noise level |
 ## 4.15 Resize : MultiTransform
 
 [TOC](#table-of-contents)
@@ -2079,7 +2085,28 @@ The module `rsp.ml.run` provides some tools for storing, loading and visualizing
 
 Run class to store and manage training
 
+**Example**
 
+```python
+from rsp.ml.run import Run
+import rsp.ml.metrics as m
+
+metrics = [
+    m.top_1_accuracy
+]
+config = {
+    m.top_1_accuracy.__name__: {
+        'ymin': 0,
+        'ymax': 1
+    }
+}
+run = Run(id='run0001', metrics=metrics, config=config, ignore_outliers_in_chart_scaling=True)
+
+for epoch in range(100):
+    """here goes some training code, giving us inputs, predictions and targets"""
+    acc = m.top_1_accuracy(predictions, targets)
+    run.append(m.top_1_accuracy.__name__, 'train', acc)
+```
 ### 5.1.1 \_\_init\_\_
 
 [TOC](#table-of-contents)
@@ -2096,6 +2123,8 @@ Run class to store and manage training
 | moving_average_epochs | int, default = 1 | Number of epochs to average over |
 | metrics | list, default = None | List of metrics to compute. Each metric should be a function that takes Y and T as input. |
 | device | str, default = None | torch device to run on |
+| ignore_outliers_in_chart_scaling | bool, default = False | Ignore outliers when scaling charts |
+| config | dict, default = {} | Configuration dictionary. Keys are metric names and values are dictionaries with keys 'ymin' and 'ymax' |
 ### 5.1.2 append
 
 [TOC](#table-of-contents)

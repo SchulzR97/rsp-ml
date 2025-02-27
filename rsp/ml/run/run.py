@@ -17,6 +17,24 @@ try:
 except Exception as e:
     print(e)
 
+#__example__ from rsp.ml.run import Run
+#__example__ import rsp.ml.metrics as m
+#__example__
+#__example__ metrics = [
+#__example__     m.top_1_accuracy
+#__example__ ]
+#__example__ config = {
+#__example__     m.top_1_accuracy.__name__: {
+#__example__         'ymin': 0,
+#__example__         'ymax': 1
+#__example__     }
+#__example__ }
+#__example__ run = Run(id='run0001', metrics=metrics, config=config, ignore_outliers_in_chart_scaling=True)
+#__example__
+#__example__ for epoch in range(100):
+#__example__     """here goes some training code, giving us inputs, predictions and targets"""
+#__example__     acc = m.top_1_accuracy(predictions, targets)
+#__example__     run.append(m.top_1_accuracy.__name__, 'train', acc)
 class Run():
     """
     Run class to store and manage training
@@ -27,7 +45,8 @@ class Run():
             moving_average_epochs = 1,
             metrics = None,
             device:str = None,
-            ignore_outliers_in_chart_scaling:bool = False
+            ignore_outliers_in_chart_scaling:bool = False,
+            config:dict = {}
         ):
         """
         Run class to store and manage training
@@ -44,6 +63,8 @@ class Run():
             torch device to run on
         ignore_outliers_in_chart_scaling : bool, default = False
             Ignore outliers when scaling charts
+        config : dict, default = {}
+            Configuration dictionary. Keys are metric names and values are dictionaries with keys 'ymin' and 'ymax'
         """
         if id is None:
             self.id = datetime.now().strftime('%Y%m%d%H%M%S%f')
@@ -55,6 +76,7 @@ class Run():
 
         self.metrics = metrics
         self.ignore_outliers_in_chart_scaling = ignore_outliers_in_chart_scaling
+        self.config = config
 
         if device is None:
             if torch.cuda.is_available():
@@ -111,8 +133,8 @@ class Run():
             q1 = df['data'].quantile(0.25)
             q3 = df['data'].quantile(0.75)
             iqr = q3 - q1
-            fence_low = q1 - 1. * iqr
-            fence_high = q3 + 1. * iqr
+            fence_low = q1 - 1.2 * iqr
+            fence_high = q3 + 1.2 * iqr
             return fence_low, fence_high
 
         for key in self.data:
@@ -124,7 +146,7 @@ class Run():
             cmap = plt.get_cmap('tab20b')
             colors = cmap(np.linspace(0, 1, len(self.data[key])))
 
-            ymin, ymax = 0., 0.
+            ymin, ymax = 1e10, 0.
             for i, phase in enumerate(self.data[key]):
                 if len(self.data[key][phase]['val']) == 0:
                     continue
@@ -139,14 +161,22 @@ class Run():
                 if key != 'time':
                     plt.plot(self.data[key][phase]['avg'], label=phase, color=colors[i])
 
+            if key in self.config:
+                if 'ymin' in self.config[key]:
+                    ymin = self.config[key]['ymin']
+                if 'ymax' in self.config[key]:
+                    ymax = self.config[key]['ymax']
+                plt.ylim(ymin, ymax)
+            elif self.ignore_outliers_in_chart_scaling:
+                plt.ylim(ymin, ymax)
+
             plt.title(key_str)
             plt.xlabel('episode')
             if key == 'time':
                 plt.ylabel(f'{key_str} [h]')
             else:
                 plt.ylabel(key_str)
-            if self.ignore_outliers_in_chart_scaling:
-                plt.ylim(ymin, ymax)
+            
             plt.minorticks_on()
             plt.grid(which='minor', color='lightgray', linewidth=0.2)
             plt.grid(which='major', linewidth=.6)
