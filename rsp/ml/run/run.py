@@ -161,14 +161,17 @@ class Run():
                 if key != 'time':
                     plt.plot(self.data[key][phase]['avg'], label=phase, color=colors[i])
 
+            #region chart scaling
+            if not self.ignore_outliers_in_chart_scaling:
+                _, _, ymin, ymax = plt.axis()
+
             if key in self.config:
                 if 'ymin' in self.config[key]:
                     ymin = self.config[key]['ymin']
                 if 'ymax' in self.config[key]:
                     ymax = self.config[key]['ymax']
-                plt.ylim(ymin, ymax)
-            elif self.ignore_outliers_in_chart_scaling:
-                plt.ylim(ymin, ymax)
+            plt.ylim(ymin, ymax)
+            #endregion
 
             plt.title(key_str)
             plt.xlabel('episode')
