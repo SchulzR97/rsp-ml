@@ -78,7 +78,6 @@ class Run():
         self.ignore_outliers_in_chart_scaling = ignore_outliers_in_chart_scaling
         self.config = config
         self.config['time'] = {'ymin': 0}
-        self.config['time_per_sample'] = {'ymin': 0}
 
         if device is None:
             if torch.cuda.is_available():
@@ -179,6 +178,8 @@ class Run():
             plt.xlabel('episode')
             if key == 'time':
                 plt.ylabel(f'{key_str} [h]')
+            elif key == 'time_per_sample':
+                plt.ylabel(f'{key_str} [s]')
             else:
                 plt.ylabel(key_str)
             
