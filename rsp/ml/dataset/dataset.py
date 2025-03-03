@@ -379,8 +379,8 @@ class Kinetics(Dataset):
             X = torch.zeros((self.sequence_length, 3, *self.frame_size), dtype=torch.float32)
             console.warning(f'No frames found for {youtube_id}.')
         else:
-            X = torch.tensor(frames).permute(0, 3, 1, 2)
-        T = torch.zeros((len(self.action_labels)))
+            X = torch.tensor(frames, dtype=torch.float32).permute(0, 3, 1, 2)
+        T = torch.zeros((len(self.action_labels)), dtpye=torch.float32)
         cls = self.action_labels.index(annotation['label'])
         T[cls] = 1
 
