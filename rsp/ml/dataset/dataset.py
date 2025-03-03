@@ -334,7 +334,7 @@ class Kinetics(Dataset):
         self.sequence_length = 10
         self.transforms = transforms
         self.num_threads = num_threads
-        self.action_labels = [f'A{i:0>3}' for i in range(400)]
+        self.action_labels = [f'A{i:0>3}' for i in range(type)]
 
         if cache_dir is None:
             self.__cache_dir__ = Path(user_cache_dir("rsp-ml", "Robert Schulz")).joinpath('dataset', 'kinetics')
