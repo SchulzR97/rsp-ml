@@ -379,6 +379,7 @@ class Kinetics(Dataset):
         if len(frames) == 0:
             X = torch.zeros((self.sequence_length, 3, *self.frame_size), dtype=torch.float32)
             self.__invalid_files__.append((youtube_id, fname))
+            self.__save_invalid_files__()
             console.warn(f'No frames found for {youtube_id}.')
         else:
             X = torch.tensor(frames, dtype=torch.float32).permute(0, 3, 1, 2)
@@ -530,7 +531,6 @@ class Kinetics(Dataset):
         files = []#{}
         for link in links:
             youtube_id = Path(link).name[:-18]
-            #files[youtube_id] = link
             if (youtube_id, link) in self.__invalid_files__:
                 continue
             files.append((youtube_id, link))
