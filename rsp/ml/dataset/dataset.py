@@ -348,6 +348,7 @@ class Kinetics(Dataset):
         self.__download__()
         self.__annotations__, self.action_labels = self.__load_annotations_labels__()
         self.__files__ = self.__list_files__()
+        self.__invalid_files__ = []
 
     def __getitem__(self, index):
         youtube_id, fname = self.__files__[index]
@@ -377,7 +378,8 @@ class Kinetics(Dataset):
 
         if len(frames) == 0:
             X = torch.zeros((self.sequence_length, 3, *self.frame_size), dtype=torch.float32)
-            console.warning(f'No frames found for {youtube_id}.')
+            self.__invalid_files__.append((youtube_id, fname))
+            console.warn(f'No frames found for {youtube_id}.')
         else:
             X = torch.tensor(frames, dtype=torch.float32).permute(0, 3, 1, 2)
         T = torch.zeros((len(self.action_labels)), dtpye=torch.float32)
@@ -388,6 +390,12 @@ class Kinetics(Dataset):
 
     def __len__(self):
         return len(self.__files__)
+    
+    def __save_invalid_files__(self):
+        invalid_files_file = self.__cache_dir__.joinpath('invalid_files.txt')
+        with open(invalid_files_file, 'w') as file:
+            for youtube_id, fname in self.__invalid_files__:
+                file.write(f'{youtube_id},{fname}\n')
     
     def __get_labels__(self):
         labels = {}
@@ -511,12 +519,20 @@ class Kinetics(Dataset):
         return annotations, sorted(labels)
 
     def __list_files__(self):
+        self.__invalid_files__ = []
+        if self.__cache_dir__.joinpath('invalid_files.txt').exists():
+            with open(self.__cache_dir__.joinpath('invalid_files.txt'), 'r') as file:
+                lines = file.read().split('\n')
+            self.__invalid_files__ = [tuple(line.split(',')) for line in lines if len(line) > 0]
+
         videos_dir = self.__cache_dir__.joinpath('videos', self.split)
         links = glob(f'{videos_dir}/k{self.type}*/*.mp4')
         files = []#{}
         for link in links:
             youtube_id = Path(link).name[:-18]
             #files[youtube_id] = link
+            if (youtube_id, link) in self.__invalid_files__:
+                continue
             files.append((youtube_id, link))
         return files
 
