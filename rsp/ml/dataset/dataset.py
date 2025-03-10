@@ -318,7 +318,8 @@ class HMDB51(Dataset):
             force_reload:bool = False,
             target_size = (400, 400),
             sequence_length:int = 30,
-            transforms:multi_transforms.Compose = multi_transforms.Compose([])
+            transforms:multi_transforms.Compose = multi_transforms.Compose([]),
+            verbose:bool = True
     ):
         """
         Initializes a new instance.
@@ -339,6 +340,8 @@ class HMDB51(Dataset):
             Length of the sequences
         transforms : rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([])
             Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details.
+        verbose : bool, default = False
+            If set to `True`, the progress will be printed.
         """
         self.download_link = 'https://drive.google.com/file/d/1iMQo02o9iEuawhGcicBvzqbZxvtoLCok/view?usp=share_link'
         self.split = split
@@ -347,11 +350,12 @@ class HMDB51(Dataset):
         self.target_size = target_size
         self.sequence_length = sequence_length
         self.transforms = transforms
+        self.verbose = verbose
 
         if cache_dir is None:
             self.__cache_dir__ = Path(user_cache_dir("rsp-ml", "Robert Schulz")).joinpath('dataset', 'HMDB51')
         else:
-            self.__cache_dir__ = Path(cache_dir)
+            self.__cache_dir__ = Path(cache_dir).joinpath('HMDB51')
         self.__cache_dir__.mkdir(parents=True, exist_ok=True)
 
         self.__download__()
@@ -368,7 +372,7 @@ class HMDB51(Dataset):
         width = cap.get(cv.CAP_PROP_FRAME_WIDTH)
         height = cap.get(cv.CAP_PROP_FRAME_HEIGHT)
 
-        if cnt-self.sequence_length < 0:
+        if cnt-self.sequence_length <= 0:
             start_idx = 0
         else:
             start_idx = np.random.randint(0, cnt-self.sequence_length)
@@ -390,10 +394,11 @@ class HMDB51(Dataset):
         T[action] = 1
 
         if X.shape[0] < self.sequence_length:
-            try:
-                console.warn(f'Seuqnce length was {X.shape[0]}. Expected {self.sequence_length}. Automatic expanding...')
-            except:
-                print(f'Seuqnce length was {X.shape[0]}. Expected {self.sequence_length}. Automatic expanding...')
+            if self.verbose:
+                try:
+                    console.warn(f'Seuqnce length was {X.shape[0]}. Expected {self.sequence_length}. Automatic expanding...')
+                except:
+                    print(f'Seuqnce length was {X.shape[0]}. Expected {self.sequence_length}. Automatic expanding...')
             X = torch.concat([X, torch.zeros((self.sequence_length-X.shape[0], X.shape[1], X.shape[2], X.shape[3]), dtype=torch.float32)])
 
         X = self.transforms(X)
@@ -403,12 +408,13 @@ class HMDB51(Dataset):
     def __download__(self):
         zip_file = f'{self.__cache_dir__.parent}/HMDB51.zip'
         if not os.path.isdir(f'{self.__cache_dir__}') or len(os.listdir(self.__cache_dir__)) == 0 or self.force_reload:
-            try:
-                console.print_c('Downloading HMDB51 dataset...')
-            except:
-                print('Downloading HMDB51 dataset...')
+            if self.verbose:
+                try:
+                    console.print_c('Downloading HMDB51 dataset...', color=console.color.GREEN)
+                except:
+                    print('Downloading HMDB51 dataset...')
             if not os.path.isfile(zip_file):
-                gdown.download(f'https://drive.google.com/uc?id=1iMQo02o9iEuawhGcicBvzqbZxvtoLCok', zip_file, quiet=False)
+                gdown.download(f'https://drive.google.com/uc?id=1iMQo02o9iEuawhGcicBvzqbZxvtoLCok', zip_file, quiet=not self.verbose)
             with zipfile.ZipFile(zip_file, 'r') as zip_ref:
                 zip_ref.extractall(self.__cache_dir__)
             if os.path.isdir(f'{self.__cache_dir__}/__MACOSX'):
