@@ -555,11 +555,12 @@ class Run():
         id = file_state_dict.name[:-len(suffix)]
         
         best_acc, best_file = self.__best_state_dict__(fname, id, suffix)
-        self.load_state_dict(model, best_file)
-        try:
-            console.success(f'Loaded {best_file}')
-        except:
-            print(f'Loaded {best_file}')
+        if best_file is not None:
+            self.load_state_dict(model, best_file)
+            try:
+                console.success(f'Loaded {best_file}')
+            except:
+                print(f'Loaded {best_file}')
 
     def pickle_dump(self, model:torch.nn.Module, fname = 'model.pkl'):
         """
