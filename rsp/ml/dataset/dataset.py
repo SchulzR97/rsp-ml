@@ -287,17 +287,59 @@ class TUCRID(Dataset):
                 backgrounds.append((bg_color,))
         return backgrounds
 
+#__example__ from rsp.ml.dataset import HMDB51
+#__example__ import rsp.ml.multi_transforms as multi_transforms
+#__example__ import cv2 as cv
+#__example__ 
+#__example__ transforms = multi_transforms.Compose([
+#__example__     multi_transforms.Color(1.5, p=0.5),
+#__example__     multi_transforms.Stack()
+#__example__ ])
+#__example__ ds = HMDB51('train', fold=1, transforms=transforms)
+#__example__ 
+#__example__ for X, T in ds:
+#__example__   for x in X.permute(0, 2, 3, 1):
+#__example__     img_color = x[:, :, :3].numpy()
+#__example__     img_depth = x[:, :, 3].numpy()
+#__example__ 
+#__example__     cv.imshow('color', img_color)
+#__example__     cv.imshow('depth', img_depth)
+#__example__ 
+#__example__     cv.waitKey(30)
 class HMDB51(Dataset):
+    """
+    Dataset class for HMDB51.
+    """
     def __init__(
             self,
             split:str,
-            fold:int,
+            fold:int = None,
             cache_dir:str = None,
             force_reload:bool = False,
             target_size = (400, 400),
             sequence_length:int = 30,
             transforms:multi_transforms.Compose = multi_transforms.Compose([])
     ):
+        """
+        Initializes a new instance.
+
+        Parameters
+        ----------
+        split : str
+            Dataset split [train|val|test]
+        fold : int
+            Fold number. The dataset is split into 3 folds. If fold is None, all folds will be loaded.
+        cache_dir : str, default = None
+            Directory to store the downloaded files. If set to `None`, the default cache directory will be used
+        force_reload : bool, default = False
+            If set to `True`, the dataset will be reloaded
+        target_size : (int, int), default = (400, 400)
+            Size of the frames. The frames will be resized to this size.
+        sequence_length : int, default = 30
+            Length of the sequences
+        transforms : rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([])
+            Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details.
+        """
         self.download_link = 'https://drive.google.com/file/d/1iMQo02o9iEuawhGcicBvzqbZxvtoLCok/view?usp=share_link'
         self.split = split
         self.fold = fold
@@ -378,7 +420,11 @@ class HMDB51(Dataset):
 
         self.action_labels = sorted([Path(folder).name for folder in glob(f'{self.__cache_dir__}/sequences/*')])
 
-        split_files = glob(f'{self.__cache_dir__}/splits/*_split{self.fold}.txt')
+        if self.fold is None:
+            split_files = glob(f'{self.__cache_dir__}/splits/*_split*.txt')
+        else:
+            split_files = glob(f'{self.__cache_dir__}/splits/*_split{self.fold}.txt')
+
         for split_file in split_files:
             split_file = Path(split_file)
             end_idx = split_file.name.find('_test_split')
@@ -399,7 +445,6 @@ class HMDB51(Dataset):
                         self.__files__.append((action_idx, fname))
                 pass
             pass
-
 
 #__example__ from rsp.ml.dataset import Kinetics
 #__example__ 
