@@ -402,7 +402,7 @@ class HMDB51(Dataset):
 
     def __download__(self):
         zip_file = f'{self.__cache_dir__.parent}/HMDB51.zip'
-        if not os.path.isdir(f'{self.__cache_dir__}') or self.force_reload:
+        if not os.path.isdir(f'{self.__cache_dir__}') or len(os.listdir(self.__cache_dir__)) == 0 or self.force_reload:
             try:
                 console.print_c('Downloading HMDB51 dataset...')
             except:
