@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages, find_namespace_packages
 
-VERSION = '0.0.113' 
+VERSION = '0.0.114' 
 DESCRIPTION = 'Machine Learning'
 with open('README.md') as f:
     LONG_DESCRIPTION = f.read()
@@ -30,13 +30,12 @@ setup(
             'rsp-common>=0.0.29',
             'numpy',
             'opencv-python',
-            # 'gym',
-            # 'matplotlib',
             'pandas',
             'seaborn',
             'googledriver',
             'huggingface-hub',
-            'datasets'
+            'datasets',
+            'gdown'
         ], # add any additional packages that 
         # needs to be installed along with your package. Eg: 'caer'
         url = "https://github.com/SchulzR97/rsp-ml",

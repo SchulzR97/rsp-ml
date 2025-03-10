@@ -5,8 +5,6 @@ from platformdirs import user_cache_dir
 from tqdm import tqdm
 from glob import glob
 from threading import Thread
-from typing import List
-from huggingface_hub import hf_hub_download, list_repo_files
 import numpy as np
 import os
 import json
@@ -19,6 +17,9 @@ import torch
 import rsp.ml.multi_transforms.multi_transforms as multi_transforms
 import time
 import pandas as pd
+import gdown
+import shutil
+import zipfile
 
 try:
     import rsp.common.console as console
@@ -286,6 +287,120 @@ class TUCRID(Dataset):
                 backgrounds.append((bg_color,))
         return backgrounds
 
+class HMDB51(Dataset):
+    def __init__(
+            self,
+            split:str,
+            fold:int,
+            cache_dir:str = None,
+            force_reload:bool = False,
+            target_size = (400, 400),
+            sequence_length:int = 30,
+            transforms:multi_transforms.Compose = multi_transforms.Compose([])
+    ):
+        self.download_link = 'https://drive.google.com/file/d/1iMQo02o9iEuawhGcicBvzqbZxvtoLCok/view?usp=share_link'
+        self.split = split
+        self.fold = fold
+        self.force_reload = force_reload
+        self.target_size = target_size
+        self.sequence_length = sequence_length
+        self.transforms = transforms
+
+        if cache_dir is None:
+            self.__cache_dir__ = Path(user_cache_dir("rsp-ml", "Robert Schulz")).joinpath('dataset', 'HMDB51')
+        else:
+            self.__cache_dir__ = Path(cache_dir)
+        self.__cache_dir__.mkdir(parents=True, exist_ok=True)
+
+        self.__download__()
+        self.__list_files__()
+
+    def __len__(self):
+        return len(self.__files__)
+    
+    def __getitem__(self, index):
+        action, fname = self.__files__[index]
+
+        cap = cv.VideoCapture(fname)
+        cnt = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
+        width = cap.get(cv.CAP_PROP_FRAME_WIDTH)
+        height = cap.get(cv.CAP_PROP_FRAME_HEIGHT)
+
+        if cnt-self.sequence_length < 0:
+            start_idx = 0
+        else:
+            start_idx = np.random.randint(0, cnt-self.sequence_length)
+        end_idx = start_idx + self.sequence_length
+
+        frames = []
+        cap.set(cv.CAP_PROP_POS_FRAMES, start_idx)
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frame = cv.resize(frame, self.target_size)
+            frames.append(frame)
+            if len(frames) >= self.sequence_length:
+                break
+
+        X = torch.tensor(np.array(frames), dtype=torch.float32).permute(0, 3, 1, 2) / 255
+        T = torch.zeros((len(self.action_labels)), dtype=torch.float32)
+        T[action] = 1
+
+        if X.shape[0] < self.sequence_length:
+            try:
+                console.warn(f'Seuqnce length was {X.shape[0]}. Expected {self.sequence_length}. Automatic expanding...')
+            except:
+                print(f'Seuqnce length was {X.shape[0]}. Expected {self.sequence_length}. Automatic expanding...')
+            X = torch.concat([X, torch.zeros((self.sequence_length-X.shape[0], X.shape[1], X.shape[2], X.shape[3]), dtype=torch.float32)])
+
+        X = self.transforms(X)
+
+        return X, T
+
+    def __download__(self):
+        zip_file = f'{self.__cache_dir__.parent}/HMDB51.zip'
+        if not os.path.isdir(f'{self.__cache_dir__}') or self.force_reload:
+            try:
+                console.print_c('Downloading HMDB51 dataset...')
+            except:
+                print('Downloading HMDB51 dataset...')
+            if not os.path.isfile(zip_file):
+                gdown.download(f'https://drive.google.com/uc?id=1iMQo02o9iEuawhGcicBvzqbZxvtoLCok', zip_file, quiet=False)
+            with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+                zip_ref.extractall(self.__cache_dir__)
+            if os.path.isdir(f'{self.__cache_dir__}/__MACOSX'):
+                shutil.rmtree(f'{self.__cache_dir__}/__MACOSX')
+            os.remove(zip_file)
+
+    def __list_files__(self):
+        self.__files__ = []
+
+        self.action_labels = sorted([Path(folder).name for folder in glob(f'{self.__cache_dir__}/sequences/*')])
+
+        split_files = glob(f'{self.__cache_dir__}/splits/*_split{self.fold}.txt')
+        for split_file in split_files:
+            split_file = Path(split_file)
+            end_idx = split_file.name.find('_test_split')
+            label = split_file.name[:end_idx]
+            action_idx = self.action_labels.index(label)
+
+            with open(split_file, 'r') as file:
+                lines = [line for line in file.read().split('\n') if len(line) > 0]
+                for line in lines:
+                    fname = line.split(' ')[0]
+                    fname = f'{self.__cache_dir__}/sequences/{label}/{fname}'
+                    split_idx = int(line.split(' ')[1])
+                    if self.split == 'train' and split_idx == 1:
+                        self.__files__.append((action_idx, fname))
+                    elif self.split == 'val' and split_idx == 2:
+                        self.__files__.append((action_idx, fname))
+                    elif self.split == 'test' and split_idx == 0:
+                        self.__files__.append((action_idx, fname))
+                pass
+            pass
+
+
 #__example__ from rsp.ml.dataset import Kinetics
 #__example__ 
 #__example__ ds = Kinetics(split='train', type=400)
@@ -334,10 +449,9 @@ class Kinetics(Dataset):
         self.sequence_length = 10
         self.transforms = transforms
         self.num_threads = num_threads
-        self.action_labels = [f'A{i:0>3}' for i in range(type)]
 
         if cache_dir is None:
-            self.__cache_dir__ = Path(user_cache_dir("rsp-ml", "Robert Schulz")).joinpath('dataset', 'kinetics')
+            self.__cache_dir__ = Path(user_cache_dir("rsp-ml", "Robert Schulz")).joinpath('dataset', f'KINETICS{type}')
         else:
             self.__cache_dir__ = Path(cache_dir)
         self.__cache_dir__.mkdir(parents=True, exist_ok=True)
@@ -347,8 +461,8 @@ class Kinetics(Dataset):
 
         self.__download__()
         self.__annotations__, self.action_labels = self.__load_annotations_labels__()
+        self.__invalid_files__ = self.__get_invalid_files__()
         self.__files__ = self.__list_files__()
-        self.__invalid_files__ = []
 
     def __getitem__(self, index):
         youtube_id, fname = self.__files__[index]
@@ -378,26 +492,96 @@ class Kinetics(Dataset):
 
         if len(frames) == 0:
             X = torch.zeros((self.sequence_length, 3, *self.frame_size), dtype=torch.float32)
-            self.__invalid_files__.append((youtube_id, fname))
-            self.__save_invalid_files__()
             console.warn(f'No frames found for {youtube_id}.')
         else:
             X = torch.tensor(frames, dtype=torch.float32).permute(0, 3, 1, 2)
-        T = torch.zeros((len(self.action_labels)), dtpye=torch.float32)
+        T = torch.zeros((len(self.action_labels)), dtype=torch.float32)
         cls = self.action_labels.index(annotation['label'])
         T[cls] = 1
 
+        if X.shape[0] < self.sequence_length:
+            console.warn(f'Seuqnce length was {X.shape[0]}. Expected {self.sequence_length}. Automatic expanding...')
+            X = torch.concat([X, torch.zeros((self.sequence_length-X.shape[0], X.shape[1], X.shape[2], X.shape[3]), dtype=torch.float32)])
+
+        X = self.transforms(X)
+
         return X, T
+    
+    def __get_invalid_files__(self):
+        valid_files_file = self.__cache_dir__.joinpath('valid_files.txt')
+        invalid_files_file = self.__cache_dir__.joinpath('invalid_files.txt')
+
+        if valid_files_file.exists():
+            with open(str(valid_files_file), 'r') as file:
+                lines = file.read().split('\n')
+            valid_files = [line for line in lines if len(line) > 0]
+        else:
+            valid_files = []  
+
+        if invalid_files_file.exists():
+            with open(str(invalid_files_file), 'r') as file:
+                lines = file.read().split('\n')
+            invalid_files = [line for line in lines if len(line) > 0]
+            # invalid_files = list(dict.fromkeys(invalid_files))
+            # with open(str(invalid_files_file), 'w') as file:
+            #     for line in invalid_files:
+            #         file.write(f'{line}\n')
+        else:
+            invalid_files = []    
+
+        videos_dir = self.__cache_dir__.joinpath('videos', self.split)
+        links = glob(f'{videos_dir}/k{self.type}*/*.mp4')
+
+        prog = tqdm(links, leave=False)
+        for i, link in enumerate(prog):
+            file = Path(link)
+            link = f'/{file.parent.parent.parent.name}/{file.parent.parent.name}/{file.parent.name}/{file.name}'
+            youtube_id = file.name[:-18]
+
+            if youtube_id in invalid_files or youtube_id in valid_files:
+                continue
+
+            if not file.exists():
+                with open(invalid_files_file, 'a') as file:
+                    file.write(f'{youtube_id}\n')
+                invalid_files.append(youtube_id)
+                continue
+
+            cap = cv.VideoCapture(str(file))
+            if not cap.isOpened():
+                with open(invalid_files_file, 'a') as file:
+                    file.write(f'{youtube_id}\n')
+                invalid_files.append(youtube_id)
+                cap.release()
+                continue
+
+            idx_start = int(file.name[-17:-11])
+            idx_end = int(file.name[-10:-4])
+            cnt = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
+
+            ret, _ = cap.read()
+
+            if idx_end > cnt or not ret:
+                with open(invalid_files_file, 'a') as file:
+                    file.write(f'{youtube_id}\n')
+                invalid_files.append(youtube_id)
+                cap.release()
+                continue
+
+            cap.release()
+
+            with open(valid_files_file, 'a') as file:
+                file.write(f'{youtube_id}\n')
+            valid_files.append(youtube_id)
+
+            prog.set_description(f'Invalid files {len(invalid_files)} ({len(invalid_files)/(len(invalid_files)+len(valid_files))*100:.2f}%)')
+            #break
+
+        return invalid_files
 
     def __len__(self):
         return len(self.__files__)
-    
-    def __save_invalid_files__(self):
-        invalid_files_file = self.__cache_dir__.joinpath('invalid_files.txt')
-        with open(invalid_files_file, 'w') as file:
-            for youtube_id, fname in self.__invalid_files__:
-                file.write(f'{youtube_id},{fname}\n')
-    
+
     def __get_labels__(self):
         labels = {}
         df = pd.DataFrame(self.__annotations__)
@@ -454,13 +638,13 @@ class Kinetics(Dataset):
 
         threads = []
 
-        prog1 = tqdm(path_link_files)
+        prog1 = tqdm(path_link_files, leave=False)
         for link_file in prog1:
             prog1.set_description(f'Downloading {link_file.stem}')
 
             with open(link_file, 'r') as file:
                 links = file.read().split('\n')
-            prog2 = tqdm(links)
+            prog2 = tqdm(links, leave=False)
             for link in prog2:
                 prog2.set_description(link)
 
@@ -520,18 +704,12 @@ class Kinetics(Dataset):
         return annotations, sorted(labels)
 
     def __list_files__(self):
-        self.__invalid_files__ = []
-        if self.__cache_dir__.joinpath('invalid_files.txt').exists():
-            with open(self.__cache_dir__.joinpath('invalid_files.txt'), 'r') as file:
-                lines = file.read().split('\n')
-            self.__invalid_files__ = [tuple(line.split(',')) for line in lines if len(line) > 0]
-
         videos_dir = self.__cache_dir__.joinpath('videos', self.split)
         links = glob(f'{videos_dir}/k{self.type}*/*.mp4')
         files = []#{}
         for link in links:
             youtube_id = Path(link).name[:-18]
-            if (youtube_id, link) in self.__invalid_files__:
+            if youtube_id in self.__invalid_files__:
                 continue
             files.append((youtube_id, link))
         return files
