@@ -539,7 +539,7 @@ class Run():
                 print(f'File runs/{self.id}/{fname} not found.')
             return
         
-    def load_best_state_dict(self, model:torch.nn.Module, fname = 'state_dict.pt'):
+    def load_best_state_dict(self, model:torch.nn.Module, fname = 'state_dict.pt', verbose:bool = False):
         """
         Load best state_dict from runs/{id}/{fname}
 
@@ -549,6 +549,8 @@ class Run():
             Model to load state_dict into
         fname : str, default = 'state_dict.pt'
             Filename to load from
+        verbose : bool, default = False
+            Print loaded file
         """
         file_state_dict = self.directory.joinpath(fname)
         suffix = file_state_dict.suffix
@@ -557,10 +559,11 @@ class Run():
         best_acc, best_file = self.__best_state_dict__(fname, id, suffix)
         if best_file is not None:
             self.load_state_dict(model, best_file)
-            try:
-                console.success(f'Loaded {best_file}')
-            except:
-                print(f'Loaded {best_file}')
+            if not verbose:
+                try:
+                    console.success(f'Loaded {best_file}')
+                except:
+                    print(f'Loaded {best_file}')
 
     def pickle_dump(self, model:torch.nn.Module, fname = 'model.pkl'):
         """
