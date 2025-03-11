@@ -13,6 +13,8 @@ This project provides some usefull machine learning functionality.
     - [1.3.1 \_\_init\_\_](#131-\_\_init\_\_)
     - [1.3.2 get\_uniform\_sampler](#132-get\_uniform\_sampler)
     - [1.3.3 load\_backgrounds](#133-load\_backgrounds)
+  - [1.4 UCF101 : torch.utils.data.dataset.Dataset](#14-ucf101--torchutilsdatadatasetdataset)
+    - [1.4.1 \_\_init\_\_](#141-\_\_init\_\_)
 - [2 metrics](#2-metrics)
   - [2.1 AUROC](#21-auroc)
   - [2.2 F1\_Score](#22-f1\_score)
@@ -188,6 +190,7 @@ Initializes a new instance.
 | target_size | (int, int), default = (400, 400) | Size of the frames. The frames will be resized to this size. |
 | sequence_length | int, default = 30 | Length of the sequences |
 | transforms | rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([]) | Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details. |
+| verbose | bool, default = False | If set to `True`, the progress will be printed. |
 ## 1.2 Kinetics : torch.utils.data.dataset.Dataset
 
 [TOC](#table-of-contents)
@@ -292,6 +295,72 @@ Loads the background images.
 | Name | Type | Description |
 |------|------|-------------|
 | load_depth_data | bool, default = True | If set to `True`, the depth images will be loaded as well. |
+## 1.4 UCF101 : torch.utils.data.dataset.Dataset
+
+[TOC](#table-of-contents)
+
+**Description**
+
+An abstract class representing a :class:`Dataset`.
+
+All datasets that represent a map from keys to data samples should subclass
+it. All subclasses should overwrite :meth:`__getitem__`, supporting fetching a
+data sample for a given key. Subclasses could also optionally overwrite
+:meth:`__len__`, which is expected to return the size of the dataset by many
+:class:`~torch.utils.data.Sampler` implementations and the default options
+of :class:`~torch.utils.data.DataLoader`. Subclasses could also
+optionally implement :meth:`__getitems__`, for speedup batched samples
+loading. This method accepts list of indices of samples of batch and returns
+list of samples.
+
+.. note::
+  :class:`~torch.utils.data.DataLoader` by default constructs an index
+  sampler that yields integral indices.  To make it work with a map-style
+  dataset with non-integral indices/keys, a custom sampler must be provided.
+
+**Example**
+
+```python
+from rsp.ml.dataset import UCF101
+import rsp.ml.multi_transforms as multi_transforms
+import cv2 as cv
+
+transforms = multi_transforms.Compose([
+    multi_transforms.Color(1.5, p=0.5),
+    multi_transforms.Stack()
+])
+ds = UCF101('train', fold=1, transforms=transforms)
+
+for X, T in ds:
+  for x in X.permute(0, 2, 3, 1):
+    img_color = x[:, :, :3].numpy()
+    img_depth = x[:, :, 3].numpy()
+
+    cv.imshow('color', img_color)
+    cv.imshow('depth', img_depth)
+
+    cv.waitKey(30)
+```
+### 1.4.1 \_\_init\_\_
+
+[TOC](#table-of-contents)
+
+**Description**
+
+Initializes a new instance.
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| split | str | Dataset split [train|val|test] |
+| fold | int | Fold number. The dataset is split into 3 folds. If fold is None, all folds will be loaded. |
+| cache_dir | str, default = None | Directory to store the downloaded files. If set to `None`, the default cache directory will be used |
+| force_reload | bool, default = False | If set to `True`, the dataset will be reloaded |
+| target_size | (int, int), default = (400, 400) | Size of the frames. The frames will be resized to this size. |
+| sequence_length | int, default = 30 | Length of the sequences |
+| transforms | rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([]) | Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details. |
+| verbose | bool, default = False | If set to `True`, the progress will be printed. |
 # 2 metrics
 
 [TOC](#table-of-contents)
@@ -2252,6 +2321,7 @@ Load best state_dict from runs/{id}/{fname}
 |------|------|-------------|
 | model | torch.nn.Module | Model to load state_dict into |
 | fname | str, default = 'state_dict.pt' | Filename to load from |
+| verbose | bool, default = False | Print loaded file |
 ### 5.1.7 load\_state\_dict
 
 [TOC](#table-of-contents)

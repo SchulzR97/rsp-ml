@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages, find_namespace_packages
 
-VERSION = '0.0.120' 
+VERSION = '0.0.122' 
 DESCRIPTION = 'Machine Learning'
 with open('README.md') as f:
     LONG_DESCRIPTION = f.read()

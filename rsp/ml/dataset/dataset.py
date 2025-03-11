@@ -343,7 +343,7 @@ class HMDB51(Dataset):
         verbose : bool, default = False
             If set to `True`, the progress will be printed.
         """
-        self.download_link = 'https://drive.google.com/file/d/1iMQo02o9iEuawhGcicBvzqbZxvtoLCok/view?usp=share_link'
+        self.download_link = f'https://drive.google.com/uc?id=1iMQo02o9iEuawhGcicBvzqbZxvtoLCok'
         self.split = split
         self.fold = fold
         self.force_reload = force_reload
@@ -414,7 +414,7 @@ class HMDB51(Dataset):
                 except:
                     print('Downloading HMDB51 dataset...')
             if not os.path.isfile(zip_file):
-                gdown.download(f'https://drive.google.com/uc?id=1iMQo02o9iEuawhGcicBvzqbZxvtoLCok', zip_file, quiet=not self.verbose)
+                gdown.download(self.download_link, zip_file, quiet=not self.verbose)
             with zipfile.ZipFile(zip_file, 'r') as zip_ref:
                 zip_ref.extractall(self.__cache_dir__)
             if os.path.isdir(f'{self.__cache_dir__}/__MACOSX'):
@@ -764,6 +764,163 @@ class Kinetics(Dataset):
                 continue
             files.append((youtube_id, link))
         return files
+
+#__example__ from rsp.ml.dataset import UCF101
+#__example__ import rsp.ml.multi_transforms as multi_transforms
+#__example__ import cv2 as cv
+#__example__ 
+#__example__ transforms = multi_transforms.Compose([
+#__example__     multi_transforms.Color(1.5, p=0.5),
+#__example__     multi_transforms.Stack()
+#__example__ ])
+#__example__ ds = UCF101('train', fold=1, transforms=transforms)
+#__example__ 
+#__example__ for X, T in ds:
+#__example__   for x in X.permute(0, 2, 3, 1):
+#__example__     img_color = x[:, :, :3].numpy()
+#__example__     img_depth = x[:, :, 3].numpy()
+#__example__ 
+#__example__     cv.imshow('color', img_color)
+#__example__     cv.imshow('depth', img_depth)
+#__example__ 
+#__example__     cv.waitKey(30)
+class UCF101(Dataset):
+    def __init__(
+            self,
+            split:str,
+            fold:int = None,
+            cache_dir:str = None,
+            force_reload:bool = False,
+            target_size = (400, 400),
+            sequence_length:int = 60,
+            transforms:multi_transforms.Compose = multi_transforms.Compose([]),
+            verbose:bool = True
+        ):
+        """
+        Initializes a new instance.
+
+        Parameters
+        ----------
+        split : str
+            Dataset split [train|val|test]
+        fold : int
+            Fold number. The dataset is split into 3 folds. If fold is None, all folds will be loaded.
+        cache_dir : str, default = None
+            Directory to store the downloaded files. If set to `None`, the default cache directory will be used
+        force_reload : bool, default = False
+            If set to `True`, the dataset will be reloaded
+        target_size : (int, int), default = (400, 400)
+            Size of the frames. The frames will be resized to this size.
+        sequence_length : int, default = 30
+            Length of the sequences
+        transforms : rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([])
+            Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details.
+        verbose : bool, default = False
+            If set to `True`, the progress will be printed.
+        """
+        assert split in ['train', 'val'], f'{split} is not a valid split. Please use one of [train, val].'
+        assert fold in [None, 1, 2, 3], f'{fold} is not a valid fold. Please use one of [None, 1, 2, 3].'
+
+        self.download_link = f'https://drive.google.com/uc?id=1AgvxQl9ShkQyh83FGf-njBiwPKkrLkWw'
+        self.split = split
+        self.fold = fold
+        self.force_reload = force_reload
+        self.target_size = target_size
+        self.sequence_length = sequence_length
+        self.transforms = transforms
+        self.verbose = verbose
+
+        if cache_dir is None:
+            self.__cache_dir__ = Path(user_cache_dir("rsp-ml", "Robert Schulz")).joinpath('dataset', 'UCF101')
+        else:
+            self.__cache_dir__ = Path(cache_dir).joinpath('UCF101')
+        self.__cache_dir__.mkdir(parents=True, exist_ok=True)
+
+        self.__download__()
+        self.__list_files__()
+
+    def __len__(self):
+        return len(self.__files__)
+
+    def __getitem__(self, index):
+        action, fname = self.__files__[index]
+
+        cap = cv.VideoCapture(fname)
+        cnt = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
+
+        if cnt-self.sequence_length <= 0:
+            start_idx = 0
+        else:
+            start_idx = np.random.randint(0, cnt-self.sequence_length)
+        end_idx = start_idx + self.sequence_length
+
+        frames = []
+        cap.set(cv.CAP_PROP_POS_FRAMES, start_idx)
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frame = cv.resize(frame, self.target_size)
+            frames.append(frame)
+            if len(frames) >= self.sequence_length:
+                break
+
+        X = torch.tensor(np.array(frames), dtype=torch.float32).permute(0, 3, 1, 2) / 255
+        T = torch.zeros((len(self.action_labels)), dtype=torch.float32)
+        T[action] = 1
+
+        if X.shape[0] < self.sequence_length:
+            if self.verbose:
+                try:
+                    console.warn(f'Seuqnce length was {X.shape[0]}. Expected {self.sequence_length}. Automatic expanding...')
+                except:
+                    print(f'Seuqnce length was {X.shape[0]}. Expected {self.sequence_length}. Automatic expanding...')
+            X = torch.concat([X, torch.zeros((self.sequence_length-X.shape[0], X.shape[1], X.shape[2], X.shape[3]), dtype=torch.float32)])
+
+        X = self.transforms(X)
+
+        return X, T
+    
+    def __download__(self):
+        zip_file = f'{self.__cache_dir__.parent}/UCF101.zip'
+        if not os.path.isdir(f'{self.__cache_dir__}') or len(os.listdir(self.__cache_dir__)) == 0 or self.force_reload:
+            if self.verbose:
+                try:
+                    console.print_c('Downloading UCF101 dataset...', color=console.color.GREEN)
+                except:
+                    print('Downloading UCF101 dataset...')
+            if not os.path.isfile(zip_file):
+                gdown.download(self.download_link, zip_file, quiet=not self.verbose)
+            with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+                zip_ref.extractall(self.__cache_dir__.parent)
+            if os.path.isdir(f'{self.__cache_dir__.parent}/__MACOSX'):
+                shutil.rmtree(f'{self.__cache_dir__.parent}/__MACOSX')
+            os.remove(zip_file)
+
+    def __list_files__(self):
+        self.__files__ = []
+
+        self.action_labels = sorted([Path(folder).name for folder in glob(f'{self.__cache_dir__}/sequences/*')])
+
+        splitname = 'trainlist' if self.split == 'train' else 'testlist'
+        if self.fold is None:
+            split_files = glob(f'{self.__cache_dir__}/splits/{splitname}*.txt')
+        else:
+            split_files = glob(f'{self.__cache_dir__}/splits/{splitname}*{self.fold}.txt')
+
+        for split_file in split_files:
+            split_file = Path(split_file)
+
+            with open(split_file, 'r') as file:
+                lines = [line for line in file.read().split('\n') if len(line) > 0]
+                for line in lines:
+                    action = line.split(' ')[0].split('/')[0]
+                    fname = line.split(' ')[0]
+                    fname = f'{self.__cache_dir__}/sequences/{fname}'
+                    action_idx = self.action_labels.index(action)
+                    self.__files__.append((action_idx, fname))
+                pass
+            pass
 
 if __name__ == '__main__':
     USE_DEPTH_DATA = True
