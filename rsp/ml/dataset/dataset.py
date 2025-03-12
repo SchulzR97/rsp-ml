@@ -409,17 +409,21 @@ class HMDB51(Dataset):
     def __download__(self):
         zip_file = f'{self.__cache_dir__.parent}/HMDB51.zip'
         if not os.path.isdir(f'{self.__cache_dir__}') or len(os.listdir(self.__cache_dir__)) == 0 or self.force_reload:
-            if self.verbose:
-                try:
-                    console.print_c('Downloading HMDB51 dataset...', color=console.color.GREEN)
-                except:
-                    print('Downloading HMDB51 dataset...')
             if not os.path.isfile(zip_file):
+                if self.verbose:
+                    try:
+                        console.print_c('Downloading HMDB51 dataset...', color=console.color.GREEN)
+                    except:
+                        print('Downloading HMDB51 dataset...')
                 gdown.download(self.download_link, zip_file, quiet=not self.verbose)
             with zipfile.ZipFile(zip_file, 'r') as zip_ref:
-                zip_ref.extractall(self.__cache_dir__)
-            if os.path.isdir(f'{self.__cache_dir__}/__MACOSX'):
-                shutil.rmtree(f'{self.__cache_dir__}/__MACOSX')
+                try:
+                    console.print_c('Extracting zip file...', color=console.color.GREEN)
+                except:
+                    print('Extracting zip file...')
+                zip_ref.extractall(self.__cache_dir__.parent)
+            if os.path.isdir(f'{self.__cache_dir__.parent}/__MACOSX'):
+                shutil.rmtree(f'{self.__cache_dir__.parent}/__MACOSX')
             os.remove(zip_file)
 
     def __list_files__(self):
