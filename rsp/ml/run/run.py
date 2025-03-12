@@ -400,8 +400,10 @@ class Run():
         Returns:
         -------
         value : float
-            Last value of key in phase
+            Last value of key in phase. If key is not in data, returns np.nan
         """
+        if key not in self.data:
+            return np.nan
         return self.data[key][phase]['val'][-1]
     
     def get_avg(self, key:str, phase:str):
@@ -418,8 +420,10 @@ class Run():
         Returns:
         -------
         value : float
-            Last average value of key in phase
+            Last average value of key in phase. If key is not in data, returns np.nan
         """
+        if key not in self.data:
+            return np.nan
         return self.data[key][phase]['avg'][-1]
     
     def len(self):

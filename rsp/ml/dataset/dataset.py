@@ -5,6 +5,7 @@ from platformdirs import user_cache_dir
 from tqdm import tqdm
 from glob import glob
 from threading import Thread
+from huggingface_hub import hf_hub_download, list_repo_files
 import numpy as np
 import os
 import json
