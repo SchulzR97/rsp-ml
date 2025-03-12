@@ -229,7 +229,7 @@ class TUCRID(Dataset):
         with open(TUCRID.CACHE_DIRECTORY.joinpath(f'{self.phase}.json'), 'r') as f:
             self.sequences = pd.DataFrame(json.load(f))
 
-        self.labels = self.sequences[['action', 'label']].drop_duplicates().sort_values('action')['label'].tolist()
+        self.action_labels = self.sequences[['action', 'label']].drop_duplicates().sort_values('action')['label'].tolist()
 
     def get_uniform_sampler(self):
         groups = self.sequences.groupby('action')

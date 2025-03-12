@@ -313,7 +313,7 @@ class Run():
         ):
         start = datetime.now()
         iterator = iter(dataloader)
-        if num_batches is None or hasattr(dataloader.dataset, 'len') and num_batches > len(dataloader):
+        if num_batches is None or hasattr(dataloader.dataset, '__len__') and num_batches > len(dataloader):
             num_batches = len(dataloader)
         if num_batches is None:
             num_batches = 1e10
