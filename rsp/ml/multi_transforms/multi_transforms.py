@@ -2,6 +2,7 @@ import torchvision.transforms
 import torch
 from PIL import Image
 from typing import List
+from ultralytics import YOLO
 import torch.nn.functional as F
 import cv2 as cv
 import numpy as np
@@ -120,6 +121,125 @@ class Normalize(MultiTransform):
     
     def __reset__(self):
         pass
+
+class RemoveBackgroundAI(MultiTransform):
+    def __init__(
+            self,
+            p:float = 1.,
+            removed_color = (0, 0, 0),
+            target_classes_yolo = [0],
+            yolo_model = "yolo11m-seg.pt"
+    ):
+        super().__init__()
+
+        self.p = p
+        self.removed_color = removed_color
+        self.target_classes_yolo = target_classes_yolo
+
+        self.__toTensor__ = ToTensor()
+        self.__toPILImage__ = ToPILImage()
+        self.__toCVImage__ = ToCVImage()
+        self.__segmentation_model__ = YOLO(yolo_model, verbose=False)
+
+        self.__reset__()
+
+    def __remove_background__(self, img, bg, mask):
+        """
+        Changes the background of the input image.
+
+        Parameters
+        ----------
+        img : np.array
+            Input image
+        bg : np.array
+            Background image
+        mask : np.array
+            Mask
+        """
+        w, h = img.shape[1], img.shape[0]
+        bg_w, bg_h = bg.shape[1], bg.shape[0]
+        scale = np.min([w / bg_w, h / bg_h])
+        new_w, new_h = int(np.round(scale * bg_w)), int(np.round(scale * bg_h))
+
+        bg = cv.resize(bg, (new_w, new_h))
+
+        img[mask > 0] = bg[mask > 0]
+
+        return img
+    
+    def __get_segmentation_mask__(self, img):
+        results = self.__segmentation_model__(img, conf=0.3, iou=0.45, verbose=False)
+        segmentation_mask = np.zeros((img.shape[0], img.shape[1]))
+        if results and results[0].masks:
+            masks = results[0].masks.data.cpu().numpy()
+            class_ids = results[0].boxes.cls.cpu().numpy().astype(int) 
+
+            for class_id, mask in zip(class_ids, masks):
+                if class_id not in self.target_classes_yolo:
+                    continue
+                mask = cv.resize(mask, (img.shape[1], img.shape[0]))
+                segmentation_mask = np.logical_or(segmentation_mask, mask)
+ 
+        segmentation_mask = np.stack([segmentation_mask] * 3, axis=-1)
+        return segmentation_mask == False
+
+    def __call__(self, inputs):
+        self.__get_size__(inputs)
+        self.__reset__()
+
+        if self.__should_remove_background__:
+            is_tensor = isinstance(inputs[0], torch.Tensor)
+            if not is_tensor:
+                inputs = self.__toTensor__(inputs)
+
+            is_color_image = inputs[0].shape[0] == 3
+            is_depth_image = inputs[0].shape[0] == 4
+
+            if is_color_image:
+                self.__masks__ = []
+
+            # backgrounds
+            bg_color = np.zeros((self.size[0], self.size[1], 3), dtype=np.float32)
+            bg_color[:, :, 0] = self.removed_color[0] / 255
+            bg_color[:, :, 1] = self.removed_color[1] / 255
+            bg_color[:, :, 2] = self.removed_color[2] / 255
+
+            bg = bg_color
+
+            if is_depth_image:
+                bg_depth = np.zeros((self.size[0], self.size[1], 1), dtype=np.float32)
+                bg_depth = np.expand_dims(bg_depth, 2)
+                bg_depth = np.concatenate([bg_depth, bg_depth, bg_depth], axis = 2)
+
+                bg_depth = np.expand_dims(bg_depth, 2)
+
+            results = []
+            for i, input in enumerate(self.__toCVImage__(inputs)):
+                img = np.asarray(input * 255, dtype=np.uint8)
+                img_rgb = img[:, :, 0:3]
+
+                mask = self.__get_segmentation_mask__(img_rgb)
+                #frame[mask == 0] = 0
+
+                mask = np.asarray(mask, dtype=np.uint8)
+                
+                if is_depth_image:
+                    bg = np.concatenate([bg_color, bg_depth], axis = 2)
+
+                result = self.__remove_background__(input, bg, mask)
+
+                results.append(result)
+
+            results = self.__toTensor__(results)
+
+            if not is_tensor:
+                results = self.__toPILImage__(results)
+        else:
+            results = inputs
+        return results
+
+    def __reset__(self):
+        self.__should_remove_background__ = np.random.random() < self.p
 
 #__example__ from rsp.nl.dataset import TUCRID
 #__example__ import rsp.ml.multi_transforms as multi_transforms

@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages, find_namespace_packages
 
-VERSION = '0.0.125' 
+VERSION = '0.0.126' 
 DESCRIPTION = 'Machine Learning'
 with open('README.md') as f:
     LONG_DESCRIPTION = f.read()
@@ -34,6 +34,7 @@ setup(
             'seaborn',
             'googledriver',
             'huggingface-hub',
+            'ultralytics',
             'datasets',
             'gdown'
         ], # add any additional packages that 

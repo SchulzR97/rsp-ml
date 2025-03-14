@@ -470,6 +470,7 @@ class Kinetics(Dataset):
     def __init__(
         self,
         split:str,
+        sequence_length:int = 60,
         type:int = 400,
         frame_size = (400, 400),
         transforms:multi_transforms.Compose = multi_transforms.Compose([]),
@@ -483,6 +484,8 @@ class Kinetics(Dataset):
         ----------
         split : str
             Dataset split [train|val]
+        sequence_length : int, default = 60
+            Length of the sequences
         type : int, default = 400
             Type of the kineticts dataset. Currently only 400 is supported.
         frame_size : (int, int), default = (400, 400)
@@ -502,7 +505,7 @@ class Kinetics(Dataset):
         self.split = split
         self.type = type
         self.frame_size = frame_size
-        self.sequence_length = 10
+        self.sequence_length = sequence_length
         self.transforms = transforms
         self.num_threads = num_threads
 
@@ -529,8 +532,8 @@ class Kinetics(Dataset):
             start_idx = np.random.randint(annotation['time_start'], annotation['time_end']-self.sequence_length)
             end_idx = start_idx + self.sequence_length
         else:
-            start_idx = annotation['time_start']
-            end_idx = annotation['time_end']
+            start_idx = (annotation['time_end'] - annotation['time_start'])//2 - self.sequence_length//2
+            end_idx = (annotation['time_end'] - annotation['time_start'])//2 + self.sequence_length//2
 
         cap = cv.VideoCapture(fname)
         cap.set(cv.CAP_PROP_POS_FRAMES, start_idx)
@@ -617,7 +620,7 @@ class Kinetics(Dataset):
 
             ret, _ = cap.read()
 
-            if idx_end > cnt or not ret:
+            if not ret:
                 with open(invalid_files_file, 'a') as file:
                     file.write(f'{youtube_id}\n')
                 invalid_files.append(youtube_id)
