@@ -475,7 +475,8 @@ class Kinetics(Dataset):
         frame_size = (400, 400),
         transforms:multi_transforms.Compose = multi_transforms.Compose([]),
         cache_dir:str = None,
-        num_threads:int = 0
+        num_threads:int = 0,
+        verbose:bool = True
     ):
         """
         Initializes a new instance.
@@ -496,6 +497,8 @@ class Kinetics(Dataset):
             Directory to store the downloaded files. If set to `None`, the default cache directory will be used
         num_threads : int, default = 0
             Number of threads to use for downloading the files.
+        verbose : bool, default = True
+            If set to `True`, the progress and additional information will be printed.
         """
         super().__init__()
 
@@ -508,6 +511,7 @@ class Kinetics(Dataset):
         self.sequence_length = sequence_length
         self.transforms = transforms
         self.num_threads = num_threads
+        self.verbose = verbose
 
         if cache_dir is None:
             self.__cache_dir__ = Path(user_cache_dir("rsp-ml", "Robert Schulz")).joinpath('dataset', f'KINETICS{type}')
@@ -551,7 +555,8 @@ class Kinetics(Dataset):
 
         if len(frames) == 0:
             X = torch.zeros((self.sequence_length, 3, *self.frame_size), dtype=torch.float32)
-            console.warn(f'No frames found for {youtube_id}.')
+            if self.verbose:
+                console.warn(f'No frames found for {youtube_id}.')
         else:
             X = torch.tensor(frames, dtype=torch.float32).permute(0, 3, 1, 2)
         T = torch.zeros((len(self.action_labels)), dtype=torch.float32)
@@ -559,7 +564,8 @@ class Kinetics(Dataset):
         T[cls] = 1
 
         if X.shape[0] < self.sequence_length:
-            console.warn(f'Seuqnce length was {X.shape[0]}. Expected {self.sequence_length}. Automatic expanding...')
+            if self.verbose:
+                console.warn(f'Seuqnce length was {X.shape[0]}. Expected {self.sequence_length}. Automatic expanding...')
             X = torch.concat([X, torch.zeros((self.sequence_length-X.shape[0], X.shape[1], X.shape[2], X.shape[3]), dtype=torch.float32)])
 
         X = self.transforms(X)
