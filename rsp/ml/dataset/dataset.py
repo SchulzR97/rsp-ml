@@ -54,7 +54,7 @@ class TUCRID(Dataset):
     Dataset class for the Robot Interaction Dataset by University of Technology Chemnitz (TUCRID).
     """
     REPO_ID = 'SchulzR97/TUCRID'
-    CACHE_DIRECTORY = Path(user_cache_dir('rsp-ml', 'Robert Schulz')).joinpath('datasets', 'TUCRID')
+    CACHE_DIRECTORY = Path(user_cache_dir('rsp-ml', 'Robert Schulz')).joinpath('dataset', 'TUCRID')
     COLOR_DIRECTORY = CACHE_DIRECTORY.joinpath('color')
     DEPTH_DIRECTORY = CACHE_DIRECTORY.joinpath('depth')
     BACKGROUND_DIRECTORY = CACHE_DIRECTORY.joinpath('background')
@@ -89,6 +89,9 @@ class TUCRID(Dataset):
 
         if cache_dir is not None:
             TUCRID.CACHE_DIRECTORY = Path(cache_dir)
+            TUCRID.COLOR_DIRECTORY = TUCRID.CACHE_DIRECTORY.joinpath('color')
+            TUCRID.DEPTH_DIRECTORY = TUCRID.CACHE_DIRECTORY.joinpath('depth')
+            TUCRID.BACKGROUND_DIRECTORY = TUCRID.CACHE_DIRECTORY.joinpath('background')
 
         self.phase = phase
         self.load_depth_data = load_depth_data
@@ -282,6 +285,225 @@ class TUCRID(Dataset):
 
             if load_depth_data:
                 fname_depth = TUCRID.BACKGROUND_DIRECTORY.joinpath('depth', fname_color.name.replace('_color', '_depth'))
+                bg_depth = cv.imread(str(fname_depth), cv.IMREAD_UNCHANGED)
+                backgrounds.append((bg_color, bg_depth))
+            else:
+                backgrounds.append((bg_color,))
+        return backgrounds
+
+class TUCHRI(Dataset):
+    """
+    Dataset class for the Robot Interaction Dataset by University of Technology Chemnitz (TUCHRI).
+    """
+    REPO_ID = 'SchulzR97/TUC-HRI'
+    CACHE_DIRECTORY = Path(user_cache_dir('rsp-ml', 'Robert Schulz')).joinpath('dataset', 'TUCHRI')
+    COLOR_DIRECTORY = CACHE_DIRECTORY.joinpath('color')
+    DEPTH_DIRECTORY = CACHE_DIRECTORY.joinpath('depth')
+    PHASES = ['train', 'val']
+
+    def __init__(
+            self,
+            phase:str,
+            load_depth_data:bool = True,
+            sequence_length:int = 30,
+            num_classes:int = 10,
+            transforms:multi_transforms.Compose = multi_transforms.Compose([]),
+            cache_dir:str = None
+    ):
+        """
+        Initializes a new instance.
+
+        Parameters
+        ----------
+        phase : str
+            Dataset phase [train|val]
+        load_depth_data : bool, default = True
+            Load depth data
+        sequence_length : int, default = 30
+            Length of the sequences
+        num_classes : int, default = 10
+            Number of classes
+        transforms : rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([])
+            Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details.
+        """
+        assert phase in TUCRID.PHASES, f'Phase "{phase}" not in {TUCRID.PHASES}'
+
+        if cache_dir is not None:
+            TUCHRI.CACHE_DIRECTORY = Path(cache_dir)
+            TUCHRI.COLOR_DIRECTORY = TUCHRI.CACHE_DIRECTORY.joinpath('color')
+            TUCHRI.DEPTH_DIRECTORY = TUCHRI.CACHE_DIRECTORY.joinpath('depth')
+
+        self.phase = phase
+        self.load_depth_data = load_depth_data
+        self.sequence_length = sequence_length
+        self.num_classes = num_classes
+        self.transforms = transforms
+
+        self.__download__()
+        self.__load__()
+        pass
+
+    def __len__(self):
+        return len(self.sequences)
+    
+    def __getitem__(self, idx):
+        id = self.sequences['id'][idx]
+        action = self.sequences['action'][idx]
+        link = self.sequences['link'][idx]
+
+        color_files = sorted(glob(f'{TUCHRI.COLOR_DIRECTORY}/{link}/*.jpg'))
+        assert len(color_files) >= self.sequence_length, f'Not enough frames for {id}.'
+
+        if len(color_files) > self.sequence_length:
+            start_idx = np.random.randint(0, len(color_files) - self.sequence_length)
+            end_idx = start_idx + self.sequence_length
+        else:
+            start_idx = 0
+            end_idx = start_idx + self.sequence_length
+
+        color_images = []
+        depth_images = []
+        for color_file in color_files[start_idx:end_idx]:
+
+            color_file = Path(color_file)
+
+            img = cv.imread(str(color_file))
+            color_images.append(img)
+
+            if self.load_depth_data:
+                depth_file = TUCHRI.DEPTH_DIRECTORY.joinpath(f'{link}/{color_file.name}')
+                img = cv.imread(str(depth_file), cv.IMREAD_UNCHANGED)
+                depth_images.append(img)
+        
+        X = torch.tensor(np.array(color_images), dtype=torch.float32) / 255
+        if self.load_depth_data:
+            X_depth = torch.tensor(np.array(depth_images), dtype=torch.float32).unsqueeze(3) / 255
+            X = torch.cat([X, X_depth], dim=3)
+        X = X.permute(0, 3, 1, 2)
+        T = torch.zeros((self.num_classes), dtype=torch.float32)
+        T[action] = 1
+
+        self.transforms.__reset__()
+        X = self.transforms(X)
+        
+        return X, T
+
+    def __download__(self):                        
+        TUCHRI.CACHE_DIRECTORY.mkdir(exist_ok=True, parents=True)
+
+        TUCHRI.__download_metadata__()
+
+        TUCHRI.__download_sequences__(self.load_depth_data)
+
+    def __download_file__(filename, retries = 10):
+        attempts = 0
+        while True:
+            try:
+                hf_hub_download(
+                    repo_id=TUCHRI.REPO_ID,
+                    repo_type='dataset',
+                    local_dir=TUCHRI.CACHE_DIRECTORY,
+                    filename=str(filename)
+                )
+                break
+            except Exception as e:
+                if attempts < retries:
+                    attempts += 1
+                else:
+                    raise e
+
+    def __download_metadata__():
+        for phase in TUCHRI.PHASES:
+            if not f'{phase}.json' in os.listdir(TUCHRI.CACHE_DIRECTORY):
+                TUCHRI.__download_file__(f'{phase}.json')
+
+    def __download_sequences__(load_depth_data):
+        repo_files = [Path(file) for file in list_repo_files(TUCHRI.REPO_ID, repo_type='dataset')]
+        color_files = [file for file in repo_files if file.parent.name == 'color']
+
+        prog = tqdm(color_files, leave=False)
+        for color_file in prog:
+            prog.set_description(f'Downloading {color_file}')
+            local_dir = TUCHRI.COLOR_DIRECTORY.joinpath(color_file.name.replace('.tar.gz', ''))
+            if local_dir.exists() and len(os.listdir(local_dir)) > 0:
+                continue
+            TUCHRI.__download_file__(color_file)
+            tar_color = TUCHRI.COLOR_DIRECTORY.joinpath(color_file.name)
+            with tarfile.open(tar_color, 'r:gz') as tar:
+                tar.extractall(local_dir)
+            os.remove(tar_color)
+
+        if load_depth_data:
+            depth_files = [file for file in repo_files if file.parent.name == 'depth']
+            prog = tqdm(depth_files)
+            for depth_file in prog:
+                prog.set_description(f'Downloading {depth_file}')
+                local_dir = TUCHRI.DEPTH_DIRECTORY.joinpath(depth_file.name.replace('.tar.gz', ''))
+                if local_dir.exists() and len(os.listdir(local_dir)) > 0:
+                    continue
+                TUCHRI.__download_file__(depth_file)
+                tar_depth = TUCHRI.DEPTH_DIRECTORY.joinpath(depth_file.name)
+                with tarfile.open(tar_depth, 'r:gz') as tar:
+                    tar.extractall(local_dir)
+                os.remove(tar_depth)
+
+    def __load__(self):
+        with open(TUCHRI.CACHE_DIRECTORY.joinpath(f'{self.phase}.json'), 'r') as f:
+            self.sequences = pd.DataFrame(json.load(f))
+
+        self.action_labels = self.sequences[['action', 'label']].drop_duplicates().sort_values('action')['label'].tolist()
+
+    def get_uniform_sampler(self):
+        groups = self.sequences.groupby('action')
+
+        action_counts = groups.size().to_numpy()
+        action_weights = 1. / (action_counts / action_counts.sum())
+        action_weights = action_weights / action_weights.sum()
+
+        for action, prob in enumerate(action_weights):
+            self.sequences.loc[self.sequences['action'] == action, 'sample_prob'] = prob
+
+        class UniformSampler(Sampler):
+            def __init__(self, probs, len):
+                self.probs = probs
+                self.len = len
+
+            def __iter__(self):
+                indices = torch.tensor(self.probs).multinomial(self.len, replacement=True).tolist()
+                for idx in indices:
+                    yield idx
+
+            def __len__(self):
+                return self.len
+            
+        return UniformSampler(self.sequences['sample_prob'].to_numpy(), len(self.sequences))
+
+    def load_backgrounds(load_depth_data:bool = True):
+        """
+        Loads the background images.
+
+        Parameters
+        ----------
+        load_depth_data : bool, default = True
+            If set to `True`, the depth images will be loaded as well.
+        """
+        bg_color_dir = TUCHRI.BACKGROUND_DIRECTORY.joinpath('color')
+        bg_depth_dir = TUCHRI.BACKGROUND_DIRECTORY.joinpath('depth')
+
+        if not bg_color_dir.exists() or len(os.listdir(bg_color_dir)) == 0:
+            TUCHRI.__download_backgrounds__()
+        if load_depth_data and (not bg_depth_dir.exists() or len(os.listdir(bg_depth_dir)) == 0):
+            TUCHRI.__download_backgrounds__()
+
+        bg_color_files = sorted(glob(f'{bg_color_dir}/*'))
+
+        backgrounds = []
+        for fname_color in bg_color_files:
+            fname_color = Path(fname_color)
+            bg_color = cv.imread(str(fname_color))
+
+            if load_depth_data:
+                fname_depth = TUCHRI.BACKGROUND_DIRECTORY.joinpath('depth', fname_color.name.replace('_color', '_depth'))
                 bg_depth = cv.imread(str(fname_depth), cv.IMREAD_UNCHANGED)
                 backgrounds.append((bg_color, bg_depth))
             else:
