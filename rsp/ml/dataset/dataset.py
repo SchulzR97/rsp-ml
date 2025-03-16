@@ -339,7 +339,7 @@ class TUCHRI(Dataset):
         self.num_classes = num_classes
         self.transforms = transforms
 
-        self.__download__()
+        #self.__download__()
         self.__load__()
         pass
 

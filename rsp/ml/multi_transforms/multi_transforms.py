@@ -3,6 +3,7 @@ import torch
 from PIL import Image
 from typing import List
 from ultralytics import YOLO
+from torch.utils.data import Dataset
 import torch.nn.functional as F
 import cv2 as cv
 import numpy as np
@@ -339,6 +340,8 @@ class ReplaceBackground(MultiTransform):
         lower = (hmin, smin, vmin)
         upper = (hmax, smax, vmax)
         mask = cv.inRange(hsv, lower, upper)
+        mask = cv.dilate(mask, np.ones((3, 3), np.uint8), iterations=1)
+
         if inverted:
             mask = 255 - mask
         return mask
@@ -391,7 +394,7 @@ class ReplaceBackground(MultiTransform):
             bg_color = bg_color[0]
             bg = bg_color
 
-            if is_depth_image:
+            if is_depth_image and self.__background__[1]:
                 bg_depth = np.asarray(self.__background__[1] / 255, dtype=np.float32)
                 bg_depth = np.expand_dims(bg_depth, 2)
                 bg_depth = np.concatenate([bg_depth, bg_depth, bg_depth], axis = 2)
@@ -417,7 +420,10 @@ class ReplaceBackground(MultiTransform):
                 mask = np.asarray(mask, dtype=np.uint8)
                 
                 if is_depth_image:
-                    bg = np.concatenate([bg_color, bg_depth], axis = 2)
+                    if self.__background__[1]:
+                        bg = np.concatenate([bg_color, bg_depth], axis = 2)
+                    else:
+                        bg = np.concatenate([bg_color, input[:, :, 3:4]], axis = 2)
 
                 result = self.__change_background__(input, bg, mask)
 
@@ -437,7 +443,14 @@ class ReplaceBackground(MultiTransform):
     def __reset__(self):
         self.__replace_background__ = np.random.random() < self.p
         idx = np.random.randint(0, len(self.backgrounds))
-        self.__background__ = self.backgrounds[idx]
+
+        if isinstance(self.backgrounds, Dataset):
+            self.__background__ = self.backgrounds[idx][0]  # avoid sampling target
+        else:
+            self.__background__ = self.backgrounds[idx]     # sample from list of backgrounds
+
+        if not isinstance(self.__background__, tuple):
+            self.__background__ = (self.__background__, None)
 
 class ToTensor(MultiTransform):
     """
