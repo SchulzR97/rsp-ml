@@ -1160,7 +1160,46 @@ class UCF101(Dataset):
                 pass
             pass
 
+#__example__ from rsp.ml.dataset import UTKinectAction3D
+#__example__ import rsp.ml.multi_transforms as multi_transforms
+#__example__ import cv2 as cv
+#__example__ 
+#__example__ transforms = multi_transforms.Compose([
+#__example__     multi_transforms.Color(1.5, p=0.5),
+#__example__     multi_transforms.Stack()
+#__example__ ])
+#__example__ ds = UTKinectAction3D('train', transforms=transforms)
+#__example__ 
+#__example__ for X, T in ds:
+#__example__   for x in X.permute(0, 2, 3, 1):
+#__example__     img_color = x[:, :, :3].numpy()
+#__example__     img_depth = x[:, :, 3].numpy()
+#__example__ 
+#__example__     cv.imshow('color', img_color)
+#__example__     cv.imshow('depth', img_depth)
+#__example__ 
+#__example__     cv.waitKey(30)
 class UTKinectAction3D(Dataset):
+    """
+    Dataset class for the UTKinectAction3D dataset.
+
+    Parameters
+    ----------
+    split : str
+        Dataset split [train|val]
+    cache_dir : str, default = None
+        Directory to store the downloaded files. If set to `None`, the default cache directory will be used
+    force_reload : bool, default = False
+        If set to `True`, the dataset will be reloaded
+    target_size : (int, int), default = (400, 400)
+        Size of the frames. The frames will be resized to this size.
+    sequence_length : int, default = 30
+        Length of the sequences
+    transforms : rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([])
+        Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details.
+    verbose : bool, default = False
+        If set to `True`, the progress will be printed.
+    """
     def __init__(
             self,
             split:str,
@@ -1301,6 +1340,8 @@ class UTKinectAction3D(Dataset):
         if X.shape[0] > self.sequence_length:
             start_idx = np.random.randint(0, X.shape[0]-self.sequence_length)
             X = X[start_idx:start_idx+self.sequence_length]
+
+        X = self.transforms(X)
 
         T = torch.zeros((len(self.action_labels)), dtype=torch.float32)
         T[action_idx] = 1
