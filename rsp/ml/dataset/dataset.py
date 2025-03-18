@@ -1340,6 +1340,8 @@ class UTKinectAction3D(Dataset):
         if X.shape[0] > self.sequence_length:
             start_idx = np.random.randint(0, X.shape[0]-self.sequence_length)
             X = X[start_idx:start_idx+self.sequence_length]
+        if X.shape[0] < self.sequence_length:
+            X = torch.cat([X, torch.zeros((self.sequence_length-X.shape[0], X.shape[1], X.shape[2], X.shape[3]), dtype=torch.float32)])
 
         X = self.transforms(X)
 
