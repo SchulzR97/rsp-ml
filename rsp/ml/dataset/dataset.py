@@ -1,3 +1,4 @@
+import urllib.request
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import Sampler
 from pathlib import Path
@@ -6,6 +7,7 @@ from tqdm import tqdm
 from glob import glob
 from threading import Thread
 from huggingface_hub import hf_hub_download, list_repo_files
+import xml.etree.ElementTree as ET
 import numpy as np
 import os
 import json
@@ -1157,6 +1159,153 @@ class UCF101(Dataset):
                     self.__files__.append((action_idx, fname))
                 pass
             pass
+
+class UTKinectAction3D(Dataset):
+    def __init__(
+            self,
+            split:str,
+            cache_dir:str = None,
+            force_reload:bool = False,
+            target_size:tuple[int, int] = (400, 400),
+            sequence_length:int = 30,
+            transforms:multi_transforms.Compose = multi_transforms.Compose([]),
+            verbose:bool = True
+        ):
+        assert split in ['train', 'val'], f'{split} is not a valid split. Please use one of [train, val].'
+
+        self.downloadlink_rgb = 'https://cvrc.ece.utexas.edu/KinectDatasets/RGB.zip'
+        self.downloadlink_depth = 'https://cvrc.ece.utexas.edu/KinectDatasets/depth.zip'
+        self.downloadlink_labels = 'https://cvrc.ece.utexas.edu/KinectDatasets/actionLabel.txt'
+
+        self.split = split
+        self.force_reload = force_reload
+        self.target_size = target_size
+        self.sequence_length = sequence_length
+        self.transforms = transforms
+        self.verbose = verbose
+
+        if cache_dir is None:
+            self.__cache_dir__ = Path(user_cache_dir("rsp-ml", "Robert Schulz")).joinpath('dataset', 'UTKinectAction3D')
+        else:
+            self.__cache_dir__ = Path(cache_dir).joinpath('UTKinectAction3D')
+        self.__cache_dir__.mkdir(parents=True, exist_ok=True)
+
+        self.__download__()
+        self.__list_files__()
+
+    def __download__(self):
+        # RGB
+        zip_file_rgb = f'{self.__cache_dir__.parent}/UTKinectAction3D_rgb.zip'
+        if not self.__cache_dir__.joinpath('RGB').exists() or\
+                len(os.listdir(self.__cache_dir__.joinpath('RGB'))) == 0 or\
+                self.force_reload:
+            if not os.path.isfile(zip_file_rgb):
+                print(f'Downloading {self.downloadlink_rgb}')
+                urllib.request.urlretrieve(self.downloadlink_rgb, zip_file_rgb)
+            zipfile.ZipFile(zip_file_rgb, 'r').extractall(self.__cache_dir__)
+        if os.path.isfile(zip_file_rgb):
+            os.remove(zip_file_rgb)
+
+        # depth
+        zip_file_depth = f'{self.__cache_dir__.parent}/UTKinectAction3D_depth.zip'
+        if not self.__cache_dir__.joinpath('depth').exists() or\
+                len(os.listdir(self.__cache_dir__.joinpath('depth'))) == 0 or\
+                self.force_reload:
+            if not os.path.isfile(zip_file_depth):
+                print(f'Downloading {self.downloadlink_depth}')
+                urllib.request.urlretrieve(self.downloadlink_depth, zip_file_depth)
+            zipfile.ZipFile(zip_file_depth, 'r').extractall(self.__cache_dir__)
+        if os.path.isfile(zip_file_depth):
+            os.remove(zip_file_depth)
+
+        # labels
+        labels_txt = f'{self.__cache_dir__}/labels.txt'
+        if not os.path.isfile(labels_txt) or self.force_reload:
+            print(f'Downloading {self.downloadlink_labels}')
+            urllib.request.urlretrieve(self.downloadlink_labels, labels_txt)
+
+    def __list_files__(self):
+        self.__sequences__ = []
+        self.action_labels = []
+
+        labels_txt = f'{self.__cache_dir__}/labels.txt'
+        with open(labels_txt, 'r') as file:
+            lines = [line for line in file.read().split('\n') if len(line) > 0]
+        
+        sub_dir = None
+        for line in lines:
+            line = line.replace('  ', ' ')
+            if ':' in line:
+                try:
+                    subject = int(sub_dir[1:3])
+                    if self.split == 'train' and subject <= 8 or\
+                        self.split == 'val' and subject > 8:
+                        action = line.split(':')[0]
+                        if action not in self.action_labels:
+                            self.action_labels.append(action)
+                        start_idx = int(line.split(' ')[1])
+                        end_idx = int(line.split(' ')[2])
+                        self.__sequences__.append((sub_dir, action, start_idx, end_idx))
+                except Exception as e:
+                    pass
+            else:
+                sub_dir = line
+        self.action_labels = sorted(self.action_labels)
+
+    def __len__(self):
+        return len(self.__sequences__)
+    
+    def __getitem__(self, index):
+        sub_dir, action_label, start_idx, end_idx = self.__sequences__[index]
+        action_idx = self.action_labels.index(action_label)
+        
+        def load_utkinect_depth_from_xml(file_path):
+            """ Lädt eine UTKinect XML-Tiefendatei und konvertiert sie in ein 320x240 NumPy-Array """
+            
+            # XML-Datei parsen
+            tree = ET.parse(file_path)
+            root = tree.getroot()
+
+            # Höhe und Breite aus XML auslesen
+            width = int(root.find(".//width").text)
+            height = int(root.find(".//height").text)
+
+            # Tiefendaten aus <data>-Tag holen (Werte sind durch Leerzeichen getrennt)
+            depth_text = root.find(".//data").text.strip()
+            depth_values = np.array(list(map(int, depth_text.split())), dtype=np.uint16)
+
+            # In (Höhe, Breite) umformen
+            depth_image = depth_values.reshape((height, width))
+
+            return depth_image
+
+        rgb_frames, depth_frames = [], []
+        for i in range(start_idx, end_idx+1):
+            rgb_file = self.__cache_dir__.joinpath('RGB', sub_dir, f'colorImg{i}.jpg')
+            if rgb_file.exists() == False:
+                continue
+            rgb_img = cv.imread(str(rgb_file))
+            rgb_img = cv.resize(rgb_img, (self.target_size[0], self.target_size[1]))
+
+            depth_file = self.__cache_dir__.joinpath('depth', sub_dir, f'depthImg{i}.xml')
+            depth_img = load_utkinect_depth_from_xml(depth_file)
+            depth_img = cv.resize(depth_img, (self.target_size[0], self.target_size[1]))
+
+            rgb_frames.append(rgb_img)
+            depth_frames.append(depth_img)
+
+        X_rgb = torch.tensor(np.array(rgb_frames), dtype=torch.float32).permute(0, 3, 1, 2) / 255
+        X_depth = torch.tensor(np.array(depth_frames), dtype=torch.float32).unsqueeze(1) / 31800
+        X = torch.cat([X_rgb, X_depth], dim=1)
+
+        if X.shape[0] > self.sequence_length:
+            start_idx = np.random.randint(0, X.shape[0]-self.sequence_length)
+            X = X[start_idx:start_idx+self.sequence_length]
+
+        T = torch.zeros((len(self.action_labels)), dtype=torch.float32)
+        T[action_idx] = 1
+
+        return X, T
 
 if __name__ == '__main__':
     USE_DEPTH_DATA = True
