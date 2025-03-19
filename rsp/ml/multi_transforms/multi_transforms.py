@@ -181,7 +181,6 @@ class RemoveBackgroundAI(MultiTransform):
                 mask = cv.resize(mask, (img.shape[1], img.shape[0]))
                 segmentation_mask = np.logical_or(segmentation_mask, mask)
  
-        segmentation_mask = np.stack([segmentation_mask] * 3, axis=-1)
         return segmentation_mask == False
 
     def __call__(self, inputs):
@@ -209,10 +208,6 @@ class RemoveBackgroundAI(MultiTransform):
 
             if is_depth_image:
                 bg_depth = np.zeros((self.size[0], self.size[1], 1), dtype=np.float32)
-                bg_depth = np.expand_dims(bg_depth, 2)
-                bg_depth = np.concatenate([bg_depth, bg_depth, bg_depth], axis = 2)
-
-                bg_depth = np.expand_dims(bg_depth, 2)
 
             results = []
             for i, input in enumerate(self.__toCVImage__(inputs)):
@@ -226,6 +221,9 @@ class RemoveBackgroundAI(MultiTransform):
                 
                 if is_depth_image:
                     bg = np.concatenate([bg_color, bg_depth], axis = 2)
+                    mask = np.stack([mask] * 4, axis=-1)
+                else:
+                    mask = np.stack([mask] * 3, axis=-1)
 
                 result = self.__remove_background__(input, bg, mask)
 
