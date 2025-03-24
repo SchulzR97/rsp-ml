@@ -59,13 +59,12 @@ class TUCRID(Dataset):
     CACHE_DIRECTORY = Path(user_cache_dir('rsp-ml', 'Robert Schulz')).joinpath('dataset', 'TUCRID')
     COLOR_DIRECTORY = CACHE_DIRECTORY.joinpath('color')
     DEPTH_DIRECTORY = CACHE_DIRECTORY.joinpath('depth')
-    BACKGROUND_DIRECTORY = CACHE_DIRECTORY.joinpath('background')
+    #BACKGROUND_DIRECTORY = CACHE_DIRECTORY.joinpath('background')
     PHASES = ['train', 'val']
 
     def __init__(
             self,
             phase:str,
-            load_depth_data:bool = True,
             sequence_length:int = 30,
             num_classes:int = 10,
             transforms:multi_transforms.Compose = multi_transforms.Compose([]),
@@ -78,8 +77,6 @@ class TUCRID(Dataset):
         ----------
         phase : str
             Dataset phase [train|val]
-        load_depth_data : bool, default = True
-            Load depth data
         sequence_length : int, default = 30
             Length of the sequences
         num_classes : int, default = 10
@@ -92,11 +89,9 @@ class TUCRID(Dataset):
         if cache_dir is not None:
             TUCRID.CACHE_DIRECTORY = Path(cache_dir)
             TUCRID.COLOR_DIRECTORY = TUCRID.CACHE_DIRECTORY.joinpath('color')
-            TUCRID.DEPTH_DIRECTORY = TUCRID.CACHE_DIRECTORY.joinpath('depth')
             TUCRID.BACKGROUND_DIRECTORY = TUCRID.CACHE_DIRECTORY.joinpath('background')
 
         self.phase = phase
-        self.load_depth_data = load_depth_data
         self.sequence_length = sequence_length
         self.num_classes = num_classes
         self.transforms = transforms
@@ -131,16 +126,8 @@ class TUCRID(Dataset):
 
             img = cv.imread(str(color_file))
             color_images.append(img)
-
-            if self.load_depth_data:
-                depth_file = TUCRID.DEPTH_DIRECTORY.joinpath(f'{link}/{color_file.name}')
-                img = cv.imread(str(depth_file), cv.IMREAD_UNCHANGED)
-                depth_images.append(img)
         
         X = torch.tensor(np.array(color_images), dtype=torch.float32) / 255
-        if self.load_depth_data:
-            X_depth = torch.tensor(np.array(depth_images), dtype=torch.float32).unsqueeze(3) / 255
-            X = torch.cat([X, X_depth], dim=3)
         X = X.permute(0, 3, 1, 2)
         T = torch.zeros((self.num_classes), dtype=torch.float32)
         T[action] = 1
@@ -154,8 +141,6 @@ class TUCRID(Dataset):
         TUCRID.CACHE_DIRECTORY.mkdir(exist_ok=True, parents=True)
 
         TUCRID.__download_metadata__()
-
-        TUCRID.__download_backgrounds__()
 
         TUCRID.__download_sequences__(self.load_depth_data)
 
@@ -180,25 +165,6 @@ class TUCRID(Dataset):
         for phase in TUCRID.PHASES:
             if not f'{phase}.json' in os.listdir(TUCRID.CACHE_DIRECTORY):
                 TUCRID.__download_file__(f'{phase}.json')
-
-    def __download_backgrounds__():
-        # color
-        background_color_dir = TUCRID.BACKGROUND_DIRECTORY.joinpath('color')
-        if not background_color_dir.exists() or len(os.listdir(background_color_dir)) == 0:
-            TUCRID.__download_file__('background/color.tar.gz')
-            background_color_tarfile = TUCRID.BACKGROUND_DIRECTORY.joinpath('color.tar.gz')
-            with tarfile.open(background_color_tarfile, 'r:gz') as tar:
-                tar.extractall(background_color_dir)
-            os.remove(background_color_tarfile)
-
-        # depth
-        background_depth_dir = TUCRID.BACKGROUND_DIRECTORY.joinpath('depth')
-        if not background_depth_dir.exists() or len(os.listdir(background_depth_dir)) == 0:
-            TUCRID.__download_file__('background/depth.tar.gz')
-            background_depth_tarfile = TUCRID.BACKGROUND_DIRECTORY.joinpath('depth.tar.gz')
-            with tarfile.open(background_depth_tarfile, 'r:gz') as tar:
-                tar.extractall(background_depth_dir)
-            os.remove(background_depth_tarfile)
 
     def __download_sequences__(load_depth_data):
         repo_files = [Path(file) for file in list_repo_files(TUCRID.REPO_ID, repo_type='dataset')]
