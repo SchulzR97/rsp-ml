@@ -60,7 +60,7 @@ class TUCRID(Dataset):
     COLOR_DIRECTORY = CACHE_DIRECTORY.joinpath('color')
     DEPTH_DIRECTORY = CACHE_DIRECTORY.joinpath('depth')
     #BACKGROUND_DIRECTORY = CACHE_DIRECTORY.joinpath('background')
-    PHASES = ['train', 'val']
+    SPLITS = ['train', 'val']
 
     def __init__(
             self,
@@ -84,7 +84,7 @@ class TUCRID(Dataset):
         transforms : rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([])
             Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details.
         """
-        assert phase in TUCRID.PHASES, f'Phase "{phase}" not in {TUCRID.PHASES}'
+        assert phase in TUCRID.SPLITS, f'Phase "{phase}" not in {TUCRID.SPLITS}'
 
         if cache_dir is not None:
             TUCRID.CACHE_DIRECTORY = Path(cache_dir)
@@ -162,7 +162,7 @@ class TUCRID(Dataset):
                     raise e
 
     def __download_metadata__():
-        for phase in TUCRID.PHASES:
+        for phase in TUCRID.SPLITS:
             if not f'{phase}.json' in os.listdir(TUCRID.CACHE_DIRECTORY):
                 TUCRID.__download_file__(f'{phase}.json')
 
@@ -268,13 +268,17 @@ class TUCHRI(Dataset):
     COLOR_DIRECTORY = CACHE_DIRECTORY.joinpath('color')
     DEPTH_DIRECTORY = CACHE_DIRECTORY.joinpath('depth')
     PHASES = ['train', 'val']
+    CROSS_SUBJECT_IDS = {
+        'train': [1, 2, 3, 4, 5, 6, 7, 9, 10, 11],
+        'val': [0, 8]
+    }
 
     def __init__(
             self,
-            phase:str,
+            split:str,
+            split_type:str = 'default',
             load_depth_data:bool = True,
             sequence_length:int = 30,
-            num_classes:int = 10,
             transforms:multi_transforms.Compose = multi_transforms.Compose([]),
             cache_dir:str = None
     ):
@@ -283,31 +287,32 @@ class TUCHRI(Dataset):
 
         Parameters
         ----------
-        phase : str
-            Dataset phase [train|val]
+        split : str
+            Dataset split [train|val]
+        split_type : str, default = 'default'
+            Split type [default|cross_subject]
         load_depth_data : bool, default = True
             Load depth data
         sequence_length : int, default = 30
             Length of the sequences
-        num_classes : int, default = 10
-            Number of classes
         transforms : rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([])
             Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details.
         """
-        assert phase in TUCRID.PHASES, f'Phase "{phase}" not in {TUCRID.PHASES}'
+        assert split in TUCRID.SPLITS, f'Split "{split}" not in {TUCRID.SPLITS}'
+        assert split_type in ['default', 'cross_subject'], f'Split type "{split_type}" not in ["default", "cross_subject"]'
 
         if cache_dir is not None:
             TUCHRI.CACHE_DIRECTORY = Path(cache_dir)
             TUCHRI.COLOR_DIRECTORY = TUCHRI.CACHE_DIRECTORY.joinpath('color')
             TUCHRI.DEPTH_DIRECTORY = TUCHRI.CACHE_DIRECTORY.joinpath('depth')
 
-        self.phase = phase
+        self.split = split
+        self.split_type = split_type
         self.load_depth_data = load_depth_data
         self.sequence_length = sequence_length
-        self.num_classes = num_classes
         self.transforms = transforms
 
-        #self.__download__()
+        self.__download__()
         self.__load__()
         pass
 
@@ -348,7 +353,7 @@ class TUCHRI(Dataset):
             X_depth = torch.tensor(np.array(depth_images), dtype=torch.float32).unsqueeze(3) / 255
             X = torch.cat([X, X_depth], dim=3)
         X = X.permute(0, 3, 1, 2)
-        T = torch.zeros((self.num_classes), dtype=torch.float32)
+        T = torch.zeros((len(self.action_labels)), dtype=torch.float32)
         T[action] = 1
 
         self.transforms.__reset__()
@@ -416,10 +421,20 @@ class TUCHRI(Dataset):
                 os.remove(tar_depth)
 
     def __load__(self):
-        with open(TUCHRI.CACHE_DIRECTORY.joinpath(f'{self.phase}.json'), 'r') as f:
-            self.sequences = pd.DataFrame(json.load(f))
+        if self.split_type == 'default':
+            with open(TUCHRI.CACHE_DIRECTORY.joinpath(f'{self.split}.json'), 'r') as f:
+                self.sequences = pd.DataFrame(json.load(f))
 
-        self.action_labels = self.sequences[['action', 'label']].drop_duplicates().sort_values('action')['label'].tolist()
+            self.action_labels = self.sequences[['action', 'label']].drop_duplicates().sort_values('action')['label'].tolist()
+        elif self.split_type == 'cross_subject':
+            with open(TUCHRI.CACHE_DIRECTORY.joinpath(f'train.json'), 'r') as f:
+                sequences_train = pd.DataFrame(json.load(f))
+            with open(TUCHRI.CACHE_DIRECTORY.joinpath(f'val.json'), 'r') as f:
+                sequences_val = pd.DataFrame(json.load(f))
+
+            self.sequences = pd.concat([sequences_train, sequences_val])
+            self.sequences = self.sequences[self.sequences['subject'].isin(TUCHRI.CROSS_SUBJECT_IDS[self.split])]
+            self.action_labels = self.sequences[['action', 'label']].drop_duplicates().sort_values('action')['label'].tolist()
 
     def get_uniform_sampler(self):
         groups = self.sequences.groupby('action')

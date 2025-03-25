@@ -303,10 +303,10 @@ class ReplaceBackground(MultiTransform):
 
         self.transforms:List[MultiTransform] = [
             ToTensor(),
-            Rotate(rotate),
+            Rotate(rotate, auto_scale=False),
             RandomCrop(max_scale = max_scale),
             RandomHorizontalFlip(),
-            RandomVerticalFlip(),
+            #RandomVerticalFlip(),
             GaussianNoise(max_noise_level=max_noise),
             ToCVImage()
         ]
