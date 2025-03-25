@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages, find_namespace_packages
 
-VERSION = '0.0.139' 
+VERSION = '0.0.140' 
 DESCRIPTION = 'Machine Learning'
 with open('README.md') as f:
     LONG_DESCRIPTION = f.read()
@@ -36,7 +36,8 @@ setup(
             'huggingface-hub',
             'ultralytics',
             'datasets',
-            'gdown'
+            'gdown',
+            'platformdirs'
         ], # add any additional packages that 
         # needs to be installed along with your package. Eg: 'caer'
         url = "https://github.com/SchulzR97/rsp-ml",

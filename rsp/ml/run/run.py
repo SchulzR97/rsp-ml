@@ -5,6 +5,7 @@ from pathlib import Path
 from tqdm import tqdm
 import numpy as np
 import json
+import time
 import matplotlib.pyplot as plt
 import pickle as pkl
 import copy
@@ -311,7 +312,7 @@ class Run():
             train:bool,
             return_XYT:bool = False
         ):
-        start = datetime.now()
+
         iterator = iter(dataloader)
         if num_batches is None or hasattr(dataloader.dataset, '__len__') and num_batches > len(dataloader):
             num_batches = len(dataloader)
@@ -326,6 +327,7 @@ class Run():
             results['X'] = []
             results['T'] = []
 
+        start_time = time.time()
         progress = tqdm(range(num_batches), desc='train' if train else 'val', total=num_batches, leave=False)
         for i in progress:
             if i >= num_batches:
@@ -355,6 +357,8 @@ class Run():
                     results[metric.__name__] = []
                 results[metric.__name__].append(val)
             
+            acc = np.average(results[metric.__name__]) if 'top_1_accuracy' in results else None
+            
             if train:
                 loss.backward()
                 optimizer.step()
@@ -364,6 +368,17 @@ class Run():
                 results['X'].append(X.detach())
                 results['Y'].append(Y.detach())
                 results['T'].append(T.detach())
+
+            remaining_time = (time.time() - start_time) / (i + 1) * (num_batches - (i + 1))
+            rem_hours = int(remaining_time // 3600)
+            rem_minutes = int((remaining_time % 3600) // 60)
+            rem_seconds = int(remaining_time % 60)
+            
+            desc = f'train' if train else 'val'
+            if acc is not None:
+                desc += f', acc: {acc:0.6f}'
+            desc += f', remaining: {rem_hours:0>2}:{rem_minutes:0>2}:{rem_seconds:0>2}'
+            progress.set_description(desc)
         
         for key in results:
             if key == 'X' or key == 'Y' or key == 'T':
@@ -372,7 +387,7 @@ class Run():
                 results[key] = np.average(results[key])
         
         results['time'] = (datetime.now() - datetime.strptime(self.data['start_time'], '%Y-%m-%d %H:%M:%S.%f')).total_seconds() / 3600
-        results['time_per_sample'] = (datetime.now() - start).total_seconds() / len(dataloader.dataset) / dataloader.batch_size
+        results['time_per_sample'] = (time.time() - start_time) / len(dataloader.dataset) / dataloader.batch_size
 
         self.epoch = self.len()
 
