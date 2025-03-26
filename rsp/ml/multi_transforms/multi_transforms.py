@@ -240,6 +240,80 @@ class RemoveBackgroundAI(MultiTransform):
     def __reset__(self):
         self.__should_remove_background__ = np.random.random() < self.p
 
+class AddMaskChannel(MultiTransform):
+    def __init__(
+            self,
+            p:float = 1.,
+            target_classes_yolo = [0],
+            yolo_model = "yolo11m-seg.pt"
+    ):
+        super().__init__()
+
+        self.p = p
+        self.target_classes_yolo = target_classes_yolo
+
+        self.__toTensor__ = ToTensor()
+        self.__toPILImage__ = ToPILImage()
+        self.__toCVImage__ = ToCVImage()
+        self.__segmentation_model__ = YOLO(yolo_model, verbose=False)
+
+        self.__reset__()
+
+    def __get_segmentation_mask__(self, img):
+        results = self.__segmentation_model__(img, conf=0.3, iou=0.45, verbose=False)
+        segmentation_mask = np.zeros((img.shape[0], img.shape[1]))
+        if results and results[0].masks:
+            masks = results[0].masks.data.cpu().numpy()
+            class_ids = results[0].boxes.cls.cpu().numpy().astype(int) 
+
+            for class_id, mask in zip(class_ids, masks):
+                if class_id not in self.target_classes_yolo:
+                    continue
+                mask = cv.resize(mask, (img.shape[1], img.shape[0]))
+                segmentation_mask = np.logical_or(segmentation_mask, mask)
+ 
+        return segmentation_mask == False
+
+    def __call__(self, inputs):
+        self.__get_size__(inputs)
+        self.__reset__()
+
+        if self.__should_remove_background__:
+            is_tensor = isinstance(inputs[0], torch.Tensor)
+            if not is_tensor:
+                inputs = self.__toTensor__(inputs)
+
+            is_color_image = inputs[0].shape[0] == 3
+
+            if is_color_image:
+                self.__masks__ = []
+
+            results = []
+            for i, input in enumerate(self.__toCVImage__(inputs)):
+                img = np.asarray(input * 255, dtype=np.uint8)
+                img_rgb = img[:, :, 0:3]
+
+                mask = self.__get_segmentation_mask__(img_rgb)
+                #frame[mask == 0] = 0
+
+                mask = np.asarray(mask==0, dtype=np.uint8)
+                mask = np.expand_dims(mask, 2)
+
+                result = np.concatenate([input, mask], axis=2)
+
+                results.append(result)
+
+            results = self.__toTensor__(results)
+
+            if not is_tensor:
+                results = self.__toPILImage__(results)
+        else:
+            results = inputs
+        return results
+
+    def __reset__(self):
+        self.__should_remove_background__ = np.random.random() < self.p
+
 #__example__ from rsp.nl.dataset import TUCRID
 #__example__ import rsp.ml.multi_transforms as multi_transforms
 #__example__ 
