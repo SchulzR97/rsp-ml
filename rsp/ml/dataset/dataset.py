@@ -263,21 +263,13 @@ class TUCHRI(Dataset):
     """
     Dataset class for the Robot Interaction Dataset by University of Technology Chemnitz (TUCHRI).
     """
-    REPO_ID = 'SchulzR97/TUC-HRI'
-    CACHE_DIRECTORY = Path(user_cache_dir('rsp-ml', 'Robert Schulz')).joinpath('dataset', 'TUCHRI')
-    COLOR_DIRECTORY = CACHE_DIRECTORY.joinpath('color')
-    DEPTH_DIRECTORY = CACHE_DIRECTORY.joinpath('depth')
-    PHASES = ['train', 'val']
-    CROSS_SUBJECT_IDS = {
-        'train': [1, 2, 3, 4, 5, 6, 7, 9, 10, 11],
-        'val': [0, 8]
-    }
+    SPLITS = ['train', 'val']
+    VALIDATION_TYPES = ['default', 'cross_subject']
 
     def __init__(
             self,
             split:str,
-            split_type:str = 'default',
-            load_depth_data:bool = True,
+            validation_type:str = 'default',
             sequence_length:int = 30,
             transforms:multi_transforms.Compose = multi_transforms.Compose([]),
             cache_dir:str = None
@@ -289,26 +281,32 @@ class TUCHRI(Dataset):
         ----------
         split : str
             Dataset split [train|val]
-        split_type : str, default = 'default'
+        validation_type : str, default = 'default'
             Split type [default|cross_subject]
-        load_depth_data : bool, default = True
-            Load depth data
         sequence_length : int, default = 30
             Length of the sequences
         transforms : rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([])
             Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details.
         """
         assert split in TUCRID.SPLITS, f'Split "{split}" not in {TUCRID.SPLITS}'
-        assert split_type in ['default', 'cross_subject'], f'Split type "{split_type}" not in ["default", "cross_subject"]'
+        assert validation_type in TUCHRI.VALIDATION_TYPES, f'Valdation type "{validation_type}" not in {TUCHRI.VALIDATION_TYPES}'
+
+        if validation_type == 'default':
+            TUCHRI.SUB_ID = 'TUC-HRI'
+        elif validation_type == 'cross_subject':
+            TUCHRI.SUB_ID = 'TUC-HRI-CS'
+
+        TUCHRI.REPO_ID = f'SchulzR97/{TUCHRI.SUB_ID}'
 
         if cache_dir is not None:
-            TUCHRI.CACHE_DIRECTORY = Path(cache_dir)
-            TUCHRI.COLOR_DIRECTORY = TUCHRI.CACHE_DIRECTORY.joinpath('color')
-            TUCHRI.DEPTH_DIRECTORY = TUCHRI.CACHE_DIRECTORY.joinpath('depth')
+            TUCHRI.CACHE_DIRECTORY = Path(cache_dir).joinpath(TUCHRI.SUB_ID)
+        else:
+            TUCHRI.CACHE_DIRECTORY = Path(user_cache_dir('rsp-ml', 'Robert Schulz')).joinpath('dataset', TUCHRI.SUB_ID)
+
+        TUCHRI.COLOR_DIRECTORY = TUCHRI.CACHE_DIRECTORY.joinpath('color')
 
         self.split = split
-        self.split_type = split_type
-        self.load_depth_data = load_depth_data
+        self.validation_type = validation_type
         self.sequence_length = sequence_length
         self.transforms = transforms
 
@@ -325,7 +323,7 @@ class TUCHRI(Dataset):
         link = self.sequences['link'][idx]
 
         color_files = sorted(glob(f'{TUCHRI.COLOR_DIRECTORY}/{link}/*.jpg'))
-        assert len(color_files) >= self.sequence_length, f'Not enough frames for {id}.'
+        assert len(color_files) >= self.sequence_length, f'Not enough frames for {link}.'
 
         if len(color_files) > self.sequence_length:
             start_idx = np.random.randint(0, len(color_files) - self.sequence_length)
@@ -335,7 +333,6 @@ class TUCHRI(Dataset):
             end_idx = start_idx + self.sequence_length
 
         color_images = []
-        depth_images = []
         for color_file in color_files[start_idx:end_idx]:
 
             color_file = Path(color_file)
@@ -346,12 +343,8 @@ class TUCHRI(Dataset):
             if self.load_depth_data:
                 depth_file = TUCHRI.DEPTH_DIRECTORY.joinpath(f'{link}/{color_file.name}')
                 img = cv.imread(str(depth_file), cv.IMREAD_UNCHANGED)
-                depth_images.append(img)
         
         X = torch.tensor(np.array(color_images), dtype=torch.float32) / 255
-        if self.load_depth_data:
-            X_depth = torch.tensor(np.array(depth_images), dtype=torch.float32).unsqueeze(3) / 255
-            X = torch.cat([X, X_depth], dim=3)
         X = X.permute(0, 3, 1, 2)
         T = torch.zeros((len(self.action_labels)), dtype=torch.float32)
         T[action] = 1
@@ -386,7 +379,7 @@ class TUCHRI(Dataset):
                     raise e
 
     def __download_metadata__():
-        for phase in TUCHRI.PHASES:
+        for phase in TUCHRI.SPLITS:
             if not f'{phase}.json' in os.listdir(TUCHRI.CACHE_DIRECTORY):
                 TUCHRI.__download_file__(f'{phase}.json')
 
@@ -406,35 +399,11 @@ class TUCHRI(Dataset):
                 tar.extractall(local_dir)
             os.remove(tar_color)
 
-        if load_depth_data:
-            depth_files = [file for file in repo_files if file.parent.name == 'depth']
-            prog = tqdm(depth_files)
-            for depth_file in prog:
-                prog.set_description(f'Downloading {depth_file}')
-                local_dir = TUCHRI.DEPTH_DIRECTORY.joinpath(depth_file.name.replace('.tar.gz', ''))
-                if local_dir.exists() and len(os.listdir(local_dir)) > 0:
-                    continue
-                TUCHRI.__download_file__(depth_file)
-                tar_depth = TUCHRI.DEPTH_DIRECTORY.joinpath(depth_file.name)
-                with tarfile.open(tar_depth, 'r:gz') as tar:
-                    tar.extractall(local_dir)
-                os.remove(tar_depth)
-
     def __load__(self):
-        if self.split_type == 'default':
-            with open(TUCHRI.CACHE_DIRECTORY.joinpath(f'{self.split}.json'), 'r') as f:
-                self.sequences = pd.DataFrame(json.load(f))
+        with open(TUCHRI.CACHE_DIRECTORY.joinpath(f'{self.split}.json'), 'r') as f:
+            self.sequences = pd.DataFrame(json.load(f))
 
-            self.action_labels = self.sequences[['action', 'label']].drop_duplicates().sort_values('action')['label'].tolist()
-        elif self.split_type == 'cross_subject':
-            with open(TUCHRI.CACHE_DIRECTORY.joinpath(f'train.json'), 'r') as f:
-                sequences_train = pd.DataFrame(json.load(f))
-            with open(TUCHRI.CACHE_DIRECTORY.joinpath(f'val.json'), 'r') as f:
-                sequences_val = pd.DataFrame(json.load(f))
-
-            self.sequences = pd.concat([sequences_train, sequences_val])
-            self.sequences = self.sequences[self.sequences['subject'].isin(TUCHRI.CROSS_SUBJECT_IDS[self.split])]
-            self.action_labels = self.sequences[['action', 'label']].drop_duplicates().sort_values('action')['label'].tolist()
+        self.action_labels = self.sequences[['action', 'label']].drop_duplicates().sort_values('action')['label'].tolist()
 
     def get_uniform_sampler(self):
         groups = self.sequences.groupby('action')
