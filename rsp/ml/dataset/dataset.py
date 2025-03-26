@@ -355,7 +355,7 @@ class TUCHRI(Dataset):
 
         TUCHRI.__download_metadata__()
 
-        TUCHRI.__download_sequences__(self.load_depth_data)
+        TUCHRI.__download_sequences__()
 
     def __download_file__(filename, retries = 10):
         attempts = 0
@@ -379,7 +379,7 @@ class TUCHRI(Dataset):
             if not f'{phase}.json' in os.listdir(TUCHRI.CACHE_DIRECTORY):
                 TUCHRI.__download_file__(f'{phase}.json')
 
-    def __download_sequences__(load_depth_data):
+    def __download_sequences__():
         repo_files = [Path(file) for file in list_repo_files(TUCHRI.REPO_ID, repo_type='dataset')]
         color_files = [file for file in repo_files if file.parent.name == 'color']
 
