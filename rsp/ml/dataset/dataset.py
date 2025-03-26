@@ -339,10 +339,6 @@ class TUCHRI(Dataset):
 
             img = cv.imread(str(color_file))
             color_images.append(img)
-
-            if self.load_depth_data:
-                depth_file = TUCHRI.DEPTH_DIRECTORY.joinpath(f'{link}/{color_file.name}')
-                img = cv.imread(str(depth_file), cv.IMREAD_UNCHANGED)
         
         X = torch.tensor(np.array(color_images), dtype=torch.float32) / 255
         X = X.permute(0, 3, 1, 2)
