@@ -79,10 +79,11 @@ def generate_file(base_module:str, number:str, modulename:str, filename:str):
                 debug_README(README)
                 nr += 1
             elif inspect.ismethod(obj) or inspect.isfunction(obj):
-                sub_number = f'{nr}' if number is None else f'{number}.{nr}'
-                README += generate_function(base_module, sub_number, obj)
-                debug_README(README)
-                nr += 1
+                if hasattr(obj, '__module__'):
+                    sub_number = f'{nr}' if number is None else f'{number}.{nr}'
+                    README += generate_function(base_module, sub_number, obj)
+                    debug_README(README)
+                    nr += 1
             elif member_name.isupper():
                 if constants == '':
                     constants += '| Name | Value | Description |\n'
@@ -168,8 +169,9 @@ def generate_class(base_module:str, number:str, obj):
         if member_name.startswith('__') and member_name not in ['__init__', '__call__']:
             continue
         if inspect.isroutine(member):
-            README += generate_function(base_module, f'{number}.{nr}', member)
-            nr += 1
+            if hasattr(obj, '__module__'):
+                README += generate_function(base_module, f'{number}.{nr}', member)
+                nr += 1
             pass
         pass
 
@@ -185,7 +187,7 @@ def generate_function(base_module:str, number:str, obj):
     README = ''
     doc = inspect.getdoc(obj)
     comments = inspect.getcomments(obj)
-    
+
     README += generate_headline(base_module, number, f'{obj.__module__}.{obj.__qualname__}')
 
     section = Section.DESCRIPTION

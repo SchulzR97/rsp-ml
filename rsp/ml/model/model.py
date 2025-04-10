@@ -24,6 +24,7 @@ class WEIGHTS(Enum):
 #__example__     model_id='MSCONV3D', 
 #__example__     weights_id='TUC-HRI-CS',
 #__example__     model=model,
+#__example__     input_shape=(1, 30, 3, 400, 400),
 #__example__     hf_token=None
 #__example__ )
 def publish_model(
@@ -31,6 +32,7 @@ def publish_model(
         model_id:str,
         weights_id:str,
         model:torch.nn.Module,
+        input_shape:tuple,
         hf_token:str = None
 ):
     """
@@ -46,6 +48,8 @@ def publish_model(
         Weights name
     model : torch.nn.Module
         PyTorch model to publish
+    input_shape : tuple
+        Input shape of the model
     hf_token : str, optional
         HuggingFace token, by default None. If None, it will be read from the cache directory or prompted from the user
     """
@@ -68,7 +72,7 @@ def publish_model(
     repo.git_pull()
 
     model_path = repo_dir.joinpath(f'{weights_id}.pth')
-    scripted_model = torch.jit.script(model)
+    scripted_model = torch.jit.trace(model, torch.rand(input_shape, dtype=torch.float32))
     scripted_model.save(model_path)
 
     repo.push_to_hub()
