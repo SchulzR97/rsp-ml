@@ -252,6 +252,8 @@ class Run():
             if key == 'X' or key == 'Y' or key == 'T':
                 continue
             self.append(key, phase = 'train', value = results[key])
+        
+        self.epoch = self.len()
 
         return results
     
@@ -300,6 +302,8 @@ class Run():
                 continue
             self.append(key, phase = 'val', value = results[key])
 
+        self.epoch = self.len()
+
         return results
 
     def __compute__(
@@ -335,7 +339,8 @@ class Run():
             
             try:
                 X, T = next(iterator)
-            except:
+            except Exception as e:
+                console.error(f'Error computing batch {i}: {e}')
                 break
             X:torch.Tensor = X.to(self.device)
             T:torch.Tensor = T.to(self.device)
@@ -357,7 +362,7 @@ class Run():
                     results[metric.__name__] = []
                 results[metric.__name__].append(val)
             
-            acc = np.average(results[metric.__name__]) if 'top_1_accuracy' in results else None
+            acc = np.average(results['top_1_accuracy']) if 'top_1_accuracy' in results else None
             
             if train:
                 loss.backward()
@@ -388,8 +393,6 @@ class Run():
         
         results['time'] = (datetime.now() - datetime.strptime(self.data['start_time'], '%Y-%m-%d %H:%M:%S.%f')).total_seconds() / 3600
         results['time_per_sample'] = (time.time() - start_time) / len(dataloader.dataset) / dataloader.batch_size
-
-        self.epoch = self.len()
 
         return results
 

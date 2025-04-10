@@ -5,70 +5,104 @@ import os
 from enum import Enum
 from pathlib import Path
 
-class MODELS(Enum):
-    TUCARC3D = 'TUC-AR-C3D'
+class MODELS():
+    MSCONV3Ds = 'MSCONV3D'
 
 class WEIGHTS(Enum):
-    TUCAR = 'tuc-ar.pth'
-    UCF101 = 'ufc101.pth'
-    NTURGB_CS = 'ntu-rgb_cs.pth'
+    TUCHRI = 'TUC-HRI'
+    TUCHRI_CS = 'TUC-HRI-CS'
 
-#__example__ #import rsp.ml.model as model
+#__example__ from rsp.ml.model import publish_model
 #__example__
-#__example__ action_recognition_model = model.load_model(MODEL.TUCARC3D, WEIGHTS.TUCAR)
+#__example__ model = torch.nn.Sequential(
+#__example__     torch.nn.Linear(10, 10),
+#__example__     torch.nn.ReLU(),
+#__example__     torch.nn.Linear(10, 10)
+#__example__ )
+#__example__ publish_model(
+#__example__     user_id='SchulzR97',
+#__example__     model_id='MSCONV3D', 
+#__example__     weights_id='TUC-HRI-CS',
+#__example__     model=model,
+#__example__     hf_token=None
+#__example__ )
+def publish_model(
+        user_id:str,
+        model_id:str,
+        weights_id:str,
+        model:torch.nn.Module,
+        hf_token:str = None
+):
+    """
+    Publishes a PyTorch model to HuggingFace.
+    
+    Parameters
+    ----------
+    user_id : str
+        HuggingFace username
+    model_id : str
+        Model name
+    weights_id : str
+        Weights name
+    model : torch.nn.Module
+        PyTorch model to publish
+    hf_token : str, optional
+        HuggingFace token, by default None. If None, it will be read from the cache directory or prompted from the user
+    """
+    cache_dir = Path('.cache')
+    repo_dir = cache_dir.joinpath(model_id)
+    repo_dir.mkdir(exist_ok=True, parents=True)
+
+    if hf_token is None:
+        token_file = cache_dir.joinpath('token.txt')
+        if token_file.exists():
+            with open(token_file, 'r') as f:
+                hf_token = f.read().strip()
+        else:
+            hf_token = input('Please enter your HuggingFace token: ')
+            with open(token_file, 'w') as f:
+                f.write(hf_token)
+    huggingface_hub.login(token=hf_token)
+
+    repo = huggingface_hub.Repository(local_dir=repo_dir, clone_from=f'{user_id}/{model_id}')
+    repo.git_pull()
+
+    model_path = repo_dir.joinpath(f'{weights_id}.pth')
+    scripted_model = torch.jit.script(model)
+    scripted_model.save(model_path)
+
+    repo.push_to_hub()
+
+#__example__ from rsp.ml.model import load_model
+#__example__
+#__example__ model = load_model(
+#__example__     user_id='SchulzR97',
+#__example__     model_id='MSCONV3D',
+#__example__     weights_id='TUC-HRI-CS'
+#__example__ )
 def load_model(
-        model:MODELS,
-        weights:WEIGHTS
+        user_id:str,
+        model_id:str,
+        weights_id:str
     ) -> torch.nn.Module:
     """
-    Loads a pretrained PyTorch model from HuggingFace.
+    Loads a PyTorch model from HuggingFace.
 
     Parameters
     ----------
-    model : MODELS
-        ID of the model
-    weights : WEIGHTS
-        ID of the weights
-
-    Returns
-    -------
-    torch.nn.Module
-        Pretrained PyTorch model
+    user_id : str
+        HuggingFace username
+    model_id : str
+        Model name
+    weights_id : str
     """
-    if isinstance(model, MODELS):
-        model = model.value
-    if isinstance(weights, WEIGHTS):
-        weights = weights.value
 
     api = huggingface_hub.HfApi()
-    model_path = api.hf_hub_download(f'SchulzR97/{model}', filename=weights)
+    model_path = api.hf_hub_download(f'{user_id}/{model_id}', filename=f'{weights_id}.pth')
 
     model = torch.jit.load(model_path)
 
     return model
-
-def publish_model(
-        model:torch.nn.Module,
-        model_id:str,
-        weights_id:str,
-        repos_dir:str = 'repos',
-        token:str = None
-    ):
-    if token is not None:
-        os.environ["HUGGINGFACEHUB_API_TOKEN"] = token
-        huggingface_hub.login(token)
-    repos_dir = Path(repos_dir)
-    model_dir = repos_dir.joinpath(model_id)
-    model_dir.mkdir(exist_ok=True, parents=True)
-    weights_path = model_dir.joinpath(weights_id)
-
-    repo = huggingface_hub.Repository(local_dir=model_dir, clone_from=f'SchulzR97/{model_id}')
-
-    scripted_model = torch.jit.script(model)
-    scripted_model.save(weights_path)
-
-    repo.push_to_hub()
-
 
 #__example__ #import rsp.ml.model as model
 #__example__
@@ -96,8 +130,27 @@ def list_model_weights():
     return weight_files
 
 if __name__ == '__main__':
-    model = torch.nn.Linear(1, 2)
-    publish_model(model, MODELS.TUCARC3D.value, 'test.pth')
+    # load_model
+    model = load_model(
+        user_id='SchulzR97',
+        model_id='MSCONV3D',
+        weights_id='TUC-HRI-CS'
+    )
+    pass
+
+    # publish_model
+    model = torch.nn.Sequential(
+        torch.nn.Linear(10, 10),
+        torch.nn.ReLU(),
+        torch.nn.Linear(10, 10)
+    )
+    publish_model(
+        user_id='SchulzR97',
+        model_id='MSCONV3D', 
+        weights_id='TUC-HRI-CS',
+        model=model,
+        hf_token=None
+    )
 
     list_model_weights()
 

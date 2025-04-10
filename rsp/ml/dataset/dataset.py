@@ -23,241 +23,72 @@ import pandas as pd
 import gdown
 import shutil
 import zipfile
+import ultralytics
+import multiprocessing
 
 try:
     import rsp.common.console as console
 except Exception as e:
-    print(e)
+    #print(e)
+    pass
 
-#__example__ from rsp.ml.dataset import TUCRID
-#__example__ from rsp.ml.dataset import ReplaceBackgroundRGBD
-#__example__ import rsp.ml.multi_transforms as multi_transforms
-#__example__ import cv2 as cv
-#__example__
-#__example__ backgrounds = TUCRID.load_backgrounds_color()
-#__example__ transforms = multi_transforms.Compose([
-#__example__     ReplaceBackgroundRGBD(backgrounds),
-#__example__     multi_transforms.Stack()
-#__example__ ])
-#__example__ 
-#__example__ ds = TUCRID('train', transforms=transforms)
-#__example__ 
-#__example__ for X, T in ds:
-#__example__   for x in X.permute(0, 2, 3, 1):
-#__example__     img_color = x[:, :, :3].numpy()
-#__example__     img_depth = x[:, :, 3].numpy()
-#__example__ 
-#__example__     cv.imshow('color', img_color)
-#__example__     cv.imshow('depth', img_depth)
-#__example__ 
-#__example__     cv.waitKey(30)
-class TUCRID(Dataset):
-    """
-    Dataset class for the Robot Interaction Dataset by University of Technology Chemnitz (TUCRID).
-    """
-    REPO_ID = 'SchulzR97/TUCRID'
-    CACHE_DIRECTORY = Path(user_cache_dir('rsp-ml', 'Robert Schulz')).joinpath('dataset', 'TUCRID')
-    COLOR_DIRECTORY = CACHE_DIRECTORY.joinpath('color')
-    DEPTH_DIRECTORY = CACHE_DIRECTORY.joinpath('depth')
-    #BACKGROUND_DIRECTORY = CACHE_DIRECTORY.joinpath('background')
-    SPLITS = ['train', 'val']
+def __get_segmentation_mask__(img):
+    segmentation_model = ultralytics.YOLO("yolo11n-seg.pt", verbose=False)
 
-    def __init__(
-            self,
-            phase:str,
-            sequence_length:int = 30,
-            num_classes:int = 10,
-            transforms:multi_transforms.Compose = multi_transforms.Compose([]),
-            cache_dir:str = None
-    ):
-        """
-        Initializes a new instance.
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    segmentation_model.to(device)
 
-        Parameters
-        ----------
-        phase : str
-            Dataset phase [train|val]
-        sequence_length : int, default = 30
-            Length of the sequences
-        num_classes : int, default = 10
-            Number of classes
-        transforms : rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([])
-            Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details.
-        """
-        assert phase in TUCRID.SPLITS, f'Phase "{phase}" not in {TUCRID.SPLITS}'
+    results = segmentation_model(img, conf=0.3, iou=0.45, verbose=False)
+    segmentation_mask = np.zeros((img.shape[0], img.shape[1]))
+    if results and results[0].masks:
+        masks = results[0].masks.data.cpu().numpy()
+        class_ids = results[0].boxes.cls.cpu().numpy().astype(int) 
 
-        if cache_dir is not None:
-            TUCRID.CACHE_DIRECTORY = Path(cache_dir)
-            TUCRID.COLOR_DIRECTORY = TUCRID.CACHE_DIRECTORY.joinpath('color')
-            TUCRID.BACKGROUND_DIRECTORY = TUCRID.CACHE_DIRECTORY.joinpath('background')
-
-        self.phase = phase
-        self.sequence_length = sequence_length
-        self.num_classes = num_classes
-        self.transforms = transforms
-
-        self.__download__()
-        self.__load__()
-        pass
-
-    def __len__(self):
-        return len(self.sequences)
-    
-    def __getitem__(self, idx):
-        id = self.sequences['id'][idx]
-        action = self.sequences['action'][idx]
-        link = self.sequences['link'][idx]
-
-        color_files = sorted(glob(f'{TUCRID.COLOR_DIRECTORY}/{link}/*.jpg'))
-        assert len(color_files) >= self.sequence_length, f'Not enough frames for {id}.'
-
-        if len(color_files) > self.sequence_length:
-            start_idx = np.random.randint(0, len(color_files) - self.sequence_length)
-            end_idx = start_idx + self.sequence_length
-        else:
-            start_idx = 0
-            end_idx = start_idx + self.sequence_length
-
-        color_images = []
-        depth_images = []
-        for color_file in color_files[start_idx:end_idx]:
-
-            color_file = Path(color_file)
-
-            img = cv.imread(str(color_file))
-            color_images.append(img)
-        
-        X = torch.tensor(np.array(color_images), dtype=torch.float32) / 255
-        X = X.permute(0, 3, 1, 2)
-        T = torch.zeros((self.num_classes), dtype=torch.float32)
-        T[action] = 1
-
-        self.transforms.__reset__()
-        X = self.transforms(X)
-        
-        return X, T
-
-    def __download__(self):                        
-        TUCRID.CACHE_DIRECTORY.mkdir(exist_ok=True, parents=True)
-
-        TUCRID.__download_metadata__()
-
-        TUCRID.__download_sequences__(self.load_depth_data)
-
-    def __download_file__(filename, retries = 10):
-        attempts = 0
-        while True:
-            try:
-                hf_hub_download(
-                    repo_id=TUCRID.REPO_ID,
-                    repo_type='dataset',
-                    local_dir=TUCRID.CACHE_DIRECTORY,
-                    filename=str(filename)
-                )
-                break
-            except Exception as e:
-                if attempts < retries:
-                    attempts += 1
-                else:
-                    raise e
-
-    def __download_metadata__():
-        for phase in TUCRID.SPLITS:
-            if not f'{phase}.json' in os.listdir(TUCRID.CACHE_DIRECTORY):
-                TUCRID.__download_file__(f'{phase}.json')
-
-    def __download_sequences__(load_depth_data):
-        repo_files = [Path(file) for file in list_repo_files(TUCRID.REPO_ID, repo_type='dataset')]
-        color_files = [file for file in repo_files if file.parent.name == 'color']
-
-        prog = tqdm(color_files, leave=False)
-        for color_file in prog:
-            prog.set_description(f'Downloading {color_file}')
-            local_dir = TUCRID.COLOR_DIRECTORY.joinpath(color_file.name.replace('.tar.gz', ''))
-            if local_dir.exists() and len(os.listdir(local_dir)) > 0:
+        for class_id, mask in zip(class_ids, masks):
+            if class_id not in [0]:
                 continue
-            TUCRID.__download_file__(color_file)
-            tar_color = TUCRID.COLOR_DIRECTORY.joinpath(color_file.name)
-            with tarfile.open(tar_color, 'r:gz') as tar:
-                tar.extractall(local_dir)
-            os.remove(tar_color)
+            mask = cv.resize(mask, (img.shape[1], img.shape[0]))
+            segmentation_mask = np.logical_or(segmentation_mask, mask)
 
-        if load_depth_data:
-            depth_files = [file for file in repo_files if file.parent.name == 'depth']
-            prog = tqdm(depth_files)
-            for depth_file in prog:
-                prog.set_description(f'Downloading {depth_file}')
-                local_dir = TUCRID.DEPTH_DIRECTORY.joinpath(depth_file.name.replace('.tar.gz', ''))
-                if local_dir.exists() and len(os.listdir(local_dir)) > 0:
-                    continue
-                TUCRID.__download_file__(depth_file)
-                tar_depth = TUCRID.DEPTH_DIRECTORY.joinpath(depth_file.name)
-                with tarfile.open(tar_depth, 'r:gz') as tar:
-                    tar.extractall(local_dir)
-                os.remove(tar_depth)
+    return segmentation_mask
 
-    def __load__(self):
-        with open(TUCRID.CACHE_DIRECTORY.joinpath(f'{self.phase}.json'), 'r') as f:
-            self.sequences = pd.DataFrame(json.load(f))
+def __generate_mask_file__(action, fname, action_labels, mask_dir):
+    action_label = action_labels[action]
+    mask_action_dir = mask_dir.joinpath(action_label)
+    mask_action_dir.mkdir(parents=True, exist_ok=True)
+    mask_file = mask_action_dir.joinpath(f'{Path(fname).stem}.avi')
+    mask_file.parent.mkdir(parents=True, exist_ok=True)
 
-        self.action_labels = self.sequences[['action', 'label']].drop_duplicates().sort_values('action')['label'].tolist()
+    if mask_file.exists() and os.path.getsize(mask_file) > 0:
+        return
 
-    def get_uniform_sampler(self):
-        groups = self.sequences.groupby('action')
+    # cap input file
+    cap = cv.VideoCapture(fname)
+    cnt = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
+    width = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+    fps = int(cap.get(cv.CAP_PROP_FPS))
 
-        action_counts = groups.size().to_numpy()
-        action_weights = 1. / (action_counts / action_counts.sum())
-        action_weights = action_weights / action_weights.sum()
+    # writer output file
+    fourcc = cv.VideoWriter_fourcc(*'XVID')  # Codec for AVI
+    video_writer = cv.VideoWriter(str(mask_file), fourcc, fps, (width, height), isColor=False)
 
-        for action, prob in enumerate(action_weights):
-            self.sequences.loc[self.sequences['action'] == action, 'sample_prob'] = prob
+    for i in range(cnt):
+        ret, frame = cap.read()
 
-        class UniformSampler(Sampler):
-            def __init__(self, probs, len):
-                self.probs = probs
-                self.len = len
+        if not ret:
+            break
 
-            def __iter__(self):
-                indices = torch.tensor(self.probs).multinomial(self.len, replacement=True).tolist()
-                for idx in indices:
-                    yield idx
+        mask = __get_segmentation_mask__(frame)
+        mask = np.asarray(mask * 255, dtype=np.uint8)
 
-            def __len__(self):
-                return self.len
-            
-        return UniformSampler(self.sequences['sample_prob'].to_numpy(), len(self.sequences))
+        # cv.imshow('mask', mask)
+        # cv.imshow('frame', frame)
+        # cv.waitKey(10)
 
-    def load_backgrounds(load_depth_data:bool = True):
-        """
-        Loads the background images.
+        video_writer.write(mask)
 
-        Parameters
-        ----------
-        load_depth_data : bool, default = True
-            If set to `True`, the depth images will be loaded as well.
-        """
-        bg_color_dir = TUCRID.BACKGROUND_DIRECTORY.joinpath('color')
-        bg_depth_dir = TUCRID.BACKGROUND_DIRECTORY.joinpath('depth')
-
-        if not bg_color_dir.exists() or len(os.listdir(bg_color_dir)) == 0:
-            TUCRID.__download_backgrounds__()
-        if load_depth_data and (not bg_depth_dir.exists() or len(os.listdir(bg_depth_dir)) == 0):
-            TUCRID.__download_backgrounds__()
-
-        bg_color_files = sorted(glob(f'{bg_color_dir}/*'))
-
-        backgrounds = []
-        for fname_color in bg_color_files:
-            fname_color = Path(fname_color)
-            bg_color = cv.imread(str(fname_color))
-
-            if load_depth_data:
-                fname_depth = TUCRID.BACKGROUND_DIRECTORY.joinpath('depth', fname_color.name.replace('_color', '_depth'))
-                bg_depth = cv.imread(str(fname_depth), cv.IMREAD_UNCHANGED)
-                backgrounds.append((bg_color, bg_depth))
-            else:
-                backgrounds.append((bg_color,))
-        return backgrounds
+    video_writer.release()
 
 class TUCHRI(Dataset):
     """
@@ -288,7 +119,7 @@ class TUCHRI(Dataset):
         transforms : rsp.ml.multi_transforms.Compose = default = rsp.ml.multi_transforms.Compose([])
             Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details.
         """
-        assert split in TUCRID.SPLITS, f'Split "{split}" not in {TUCRID.SPLITS}'
+        assert split in TUCHRI.SPLITS, f'Split "{split}" not in {TUCHRI.SPLITS}'
         assert validation_type in TUCHRI.VALIDATION_TYPES, f'Valdation type "{validation_type}" not in {TUCHRI.VALIDATION_TYPES}'
 
         if validation_type == 'default':
@@ -978,7 +809,9 @@ class UCF101(Dataset):
             target_size = (400, 400),
             sequence_length:int = 60,
             transforms:multi_transforms.Compose = multi_transforms.Compose([]),
-            verbose:bool = True
+            verbose:bool = True,
+            load_person_masks:bool = False,
+            max_workers:int = 8
         ):
         """
         Initializes a new instance.
@@ -1001,6 +834,10 @@ class UCF101(Dataset):
             Transformations, that will be applied to each input sequence. See documentation of `rsp.ml.multi_transforms` for more details.
         verbose : bool, default = False
             If set to `True`, the progress will be printed.
+        load_person_masks : bool, default = False
+            If set to `True`, the person masks will be loaded as 4th channel in the input sequence.
+        max_workers : int, default = 8
+            Number of workers to use for generating the person masks
         """
         assert split in ['train', 'val'], f'{split} is not a valid split. Please use one of [train, val].'
         assert fold in [None, 1, 2, 3], f'{fold} is not a valid fold. Please use one of [None, 1, 2, 3].'
@@ -1013,6 +850,8 @@ class UCF101(Dataset):
         self.sequence_length = sequence_length
         self.transforms = transforms
         self.verbose = verbose
+        self.load_person_masks = load_person_masks
+        self.max_workers = max_workers
 
         if cache_dir is None:
             self.__cache_dir__ = Path(user_cache_dir("rsp-ml", "Robert Schulz")).joinpath('dataset', 'UCF101')
@@ -1022,6 +861,9 @@ class UCF101(Dataset):
 
         self.__download__()
         self.__list_files__()
+        if self.load_person_masks:
+            self.mask_dir = self.__cache_dir__.joinpath('masks')
+            self.__generate_person_masks__()
 
     def __len__(self):
         return len(self.__files__)
@@ -1029,8 +871,10 @@ class UCF101(Dataset):
     def __getitem__(self, index):
         action, fname = self.__files__[index]
 
-        cap = cv.VideoCapture(fname)
-        cnt = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
+        cap_rgb = cv.VideoCapture(fname)
+        if self.load_person_masks:
+            cap_mask = cv.VideoCapture(self.__cache_dir__.joinpath('masks', self.action_labels[action], Path(fname).name))
+        cnt = int(cap_rgb.get(cv.CAP_PROP_FRAME_COUNT))
 
         if cnt-self.sequence_length <= 0:
             start_idx = 0
@@ -1039,17 +883,38 @@ class UCF101(Dataset):
         end_idx = start_idx + self.sequence_length
 
         frames = []
-        cap.set(cv.CAP_PROP_POS_FRAMES, start_idx)
+        cap_rgb.set(cv.CAP_PROP_POS_FRAMES, start_idx)
+        if self.load_person_masks:
+            masks = []
+            cap_mask.set(cv.CAP_PROP_POS_FRAMES, start_idx)
+        
         while True:
-            ret, frame = cap.read()
+            ret, frame = cap_rgb.read()
             if not ret:
                 break
             frame = cv.resize(frame, self.target_size)
             frames.append(frame)
+
+            if self.load_person_masks:
+                ret, frame_mask = cap_mask.read()
+                if not ret:
+                    frame_mask = np.zeros_like(frame, dtype=np.uint8)
+                frame_mask = cv.resize(frame_mask, self.target_size)
+                frame_mask = cv.cvtColor(frame_mask, cv.COLOR_BGR2GRAY)
+                masks.append(frame_mask)
+
             if len(frames) >= self.sequence_length:
                 break
 
         X = torch.tensor(np.array(frames), dtype=torch.float32).permute(0, 3, 1, 2) / 255
+
+        if self.load_person_masks:
+            X_masks = torch.tensor(np.array(masks), dtype=torch.float32).unsqueeze(1) / 255
+            if X_masks.shape[0] < X.shape[0]:
+                X_masks = torch.concat([X_masks, torch.zeros((self.sequence_length-X_masks.shape[0], X_masks.shape[1], X_masks.shape[2], X_masks.shape[3]), dtype=torch.float32)])
+
+            X = torch.cat((X, X_masks), dim=1)
+
         T = torch.zeros((len(self.action_labels)), dtype=torch.float32)
         T[action] = 1
 
@@ -1065,6 +930,34 @@ class UCF101(Dataset):
 
         return X, T
     
+    def __generate_person_masks__(self):
+        prog = tqdm(self.__files__, leave=False, desc='Generating person masks')
+
+        processes = []
+        times = []
+        for i, (action, fname) in enumerate(prog):
+            start = time.time()
+
+            action_name = Path(fname).parent.name
+            avi_name = Path(fname).name
+            mask_file = self.__cache_dir__.joinpath('masks', action_name, avi_name)
+            if mask_file.exists() and os.path.getsize(mask_file) > 0:
+                continue
+
+            if self.max_workers == 0:
+                __generate_mask_file__(action, fname, self.action_labels, self.mask_dir)
+            else:
+                process = multiprocessing.Process(target=__generate_mask_file__, args=(action, fname, self.action_labels, self.mask_dir))
+                while len(processes) >= self.max_workers:
+                    processes = [t for t in processes if t.is_alive()]
+                    time.sleep(0.1)
+                process.start()
+                processes.append(process)
+            if time.time()-start > 10:
+                times.append(time.time()-start)
+            prog.set_description(f'Generating person masks {np.mean(times):.2f}s')
+            pass
+
     def __download__(self):
         zip_file = f'{self.__cache_dir__.parent}/UCF101.zip'
         if not os.path.isdir(f'{self.__cache_dir__}') or len(os.listdir(self.__cache_dir__)) == 0 or self.force_reload:
@@ -1297,47 +1190,4 @@ class UTKinectAction3D(Dataset):
         return X, T
 
 if __name__ == '__main__':
-    USE_DEPTH_DATA = True
-    backgrounds = TUCRID.load_backgrounds(USE_DEPTH_DATA)
-    tranforms_train = multi_transforms.Compose([
-        multi_transforms.ReplaceBackground(
-            backgrounds = backgrounds,
-            hsv_filter=[(69, 87, 139, 255, 52, 255)],
-            p = 0.8,
-            rotate=180
-        ),
-        multi_transforms.Resize((400, 400), auto_crop=False),
-        multi_transforms.Color(0.1, p = 0.2),
-        multi_transforms.Brightness(0.7, 1.3),
-        multi_transforms.Satturation(0.7, 1.3),
-        multi_transforms.RandomHorizontalFlip(),
-        multi_transforms.GaussianNoise(0.002),
-        multi_transforms.Rotate(max_angle=3),
-        multi_transforms.Stack()
-    ])
-    tucrid_train = TUCRID('train', load_depth_data=USE_DEPTH_DATA, transforms=tranforms_train)
-    sampler_train = tucrid_train.get_uniform_sampler()
-
-    dl_train = DataLoader(tucrid_train, batch_size=4, sampler=sampler_train)
-
-    for X, T in dl_train:
-        for seq_X, seq_T in zip(X, T):
-            for x in seq_X:
-                img = x[0:3].permute(1, 2, 0).numpy()
-                img = np.array(img * 255, dtype=np.uint8)
-
-                if x.shape[0] == 4:
-                    img_depth = x[3].numpy()
-                    img_depth = cv.applyColorMap((img_depth * 255).astype(np.uint8), cv.COLORMAP_COOL)
-                    img = np.hstack([img, img_depth])
-
-                cv.imshow('img', img)
-                cv.waitKey(30)
     pass
-
-
-    k400 = Kinetics('train', num_threads=2, cache_dir='/Volumes/USB-Freigabe/KINETICS400')#cache_dir='/Volumes/ROBERT512GB/KINETICS400')
-
-    for i, (X, T) in enumerate(k400):
-        print(i)
-        pass
